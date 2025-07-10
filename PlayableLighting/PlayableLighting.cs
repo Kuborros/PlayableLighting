@@ -27,10 +27,10 @@ namespace PlayableLighting
 
             //Load AssetBundles
             string assetPath = Path.Combine(Path.GetFullPath("."), "mod_overrides\\LightingMod");
-            dataBundle = AssetBundle.LoadFromFile(Path.Combine(assetPath, "lighting.assets"));
-            tutorialScene = AssetBundle.LoadFromFile(Path.Combine(assetPath, "tutoriallighting.scene"));
+            dataBundle = AssetBundle.LoadFromFile(Path.Combine(assetPath, "playablelighting.assets"));
+            //tutorialScene = AssetBundle.LoadFromFile(Path.Combine(assetPath, "tutoriallighting.scene"));
 
-            if (dataBundle == null || tutorialScene == null)
+            if (dataBundle == null) //|| tutorialScene == null)
             {
                 logSource.LogError("Failed to load AssetBundles! This mod cannot work without them, exiting. Please reinstall it.");
                 return;
@@ -45,10 +45,10 @@ namespace PlayableLighting
             VinylHandler.RegisterVinyl("kubo.m_theme_lighting", "Lighting's Theme", lightingTheme, VAddToShop.Fawnstar);
 
             //Add Badges
-            BadgeHandler.RegisterBadge("kubo.lightingrunner", "Winged Runner", "Beat any stage's par time as Lighting.", dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Badges")[0], FPBadgeType.SILVER);
-            BadgeHandler.RegisterBadge("kubo.lightingspeedrunner", "Winged Speedrunner", "Beat any stage as Lighting in less than half of the par time.", dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Badges")[1], FPBadgeType.SILVER);
-            BadgeHandler.RegisterBadge("kubo.lightingmaster", "Winged Master", "Beat the par times in all stages as Lighting.", dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Badges")[2], FPBadgeType.GOLD);
-            BadgeHandler.RegisterBadge("kubo.lightingcomplete", "Future Preserved", "Finish the game as Lighting.", dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Badges")[3], FPBadgeType.GOLD);
+            //BadgeHandler.RegisterBadge("kubo.lightingrunner", "Winged Runner", "Beat any stage's par time as Lighting.", dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Badges")[0], FPBadgeType.SILVER);
+            //BadgeHandler.RegisterBadge("kubo.lightingspeedrunner", "Winged Speedrunner", "Beat any stage as Lighting in less than half of the par time.", dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Badges")[1], FPBadgeType.SILVER);
+            //BadgeHandler.RegisterBadge("kubo.lightingmaster", "Winged Master", "Beat the par times in all stages as Lighting.", dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Badges")[2], FPBadgeType.GOLD);
+            //BadgeHandler.RegisterBadge("kubo.lightingcomplete", "Future Preserved", "Finish the game as Lighting.", dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Badges")[3], FPBadgeType.GOLD);
 
             //Load character select object
             GameObject lightingWheel = dataBundle.LoadAsset<GameObject>("Menu CS Character Lighting");
@@ -75,13 +75,13 @@ namespace PlayableLighting
                 profilePic = dataBundle.LoadAsset<Sprite>("Lighting_portrait"),
                 keyArtSprite = dataBundle.LoadAsset<Sprite>("Lighting_KeyArt"),
                 endingKeyArtSprite = dataBundle.LoadAsset<Sprite>("Lighting_KeyArt"),
-                charSelectName = dataBundle.LoadAsset<Sprite>("Lighting_Name"),
-                piedSprite = (Sprite)dataBundle.LoadAssetWithSubAssets("Lighting_Pie")[1],
-                piedHurtSprite = (Sprite)dataBundle.LoadAssetWithSubAssets("Lighting_Pie")[2],
+                charSelectName = dataBundle.LoadAsset<Sprite>("Lighting-File-Select"),
+                piedSprite = null,//(Sprite)dataBundle.LoadAssetWithSubAssets("Lighting_Pie")[1],
+                piedHurtSprite = null,//(Sprite)dataBundle.LoadAssetWithSubAssets("Lighting_Pie")[2],
                 itemFuel = dataBundle.LoadAsset<Sprite>("ItemFuelCrystal"),
                 worldMapPauseSprite = dataBundle.LoadAsset<Sprite>("lighting_Pause"),
                 zaoBaseballSprite = dataBundle.LoadAsset<Sprite>("LightingZLBall"),
-                livesIconAnim = dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Stock"),
+                livesIconAnim = [null, null, null], //dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Stock"),
                 sagaBlock = dataBundle.LoadAsset<RuntimeAnimatorController>("SagaLighting"),
                 sagaBlockSyntax = dataBundle.LoadAsset<RuntimeAnimatorController>("Saga2Lighting"),
                 resultsTrack = lightingClear,
@@ -102,6 +102,13 @@ namespace PlayableLighting
             }
 
             Harmony harmony = new Harmony("com.kuborro.plugins.fp2.playablelighting");
+            harmony.PatchAll(typeof(PatchAnimatorPreInitializer));
+            harmony.PatchAll(typeof(PatchFPHudMaster));
+            harmony.PatchAll(typeof(PatchFPPlayer));
+            harmony.PatchAll(typeof(PatchFPResultsMenu));
+            harmony.PatchAll(typeof(PatchFPSaveManager));
+            harmony.PatchAll(typeof(PatchMenuClassic));
+            harmony.PatchAll(typeof(PatchMenuWorldMap));
         }
     }
 }
