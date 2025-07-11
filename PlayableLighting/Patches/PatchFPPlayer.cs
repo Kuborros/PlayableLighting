@@ -35,6 +35,7 @@ namespace PlayableLighting.Patches
 
         private static float weaponCharge = 0f;
         private static float shotDelay = 10f;
+        private static float chargeShotDelay = 50f;
 
         private static readonly float energyRecoveryBaseSpeed = 0.4f;
         private static readonly float baseProjectileDamage = 2f;
@@ -219,15 +220,17 @@ namespace PlayableLighting.Patches
             {
                 player.SetPlayerAnimation("AirAttack", null, null, false, true);
                 player.genericTimer = 0f;
-                shotDelay = 5f;
+                shotDelay = 10f;
+                chargeShotDelay = 40f;
                 Action_Lighting_NormalShotFire();
                 player.idleTimer = -player.fightStanceTime;
                 player.Action_StopSound();
             }
-            else if (player.input.attackHold && shotDelay > 0f)
+            else if (player.input.attackHold && shotDelay < 0f && chargeShotDelay < 0f && player.energy > 95f)
             {
                 player.SetPlayerAnimation("AirAttack", null, null, false, true);
-                player.genericTimer = 0f;
+                shotDelay = 10f;
+                chargeShotDelay = 40f;
                 player.state = new FPObjectState(State_Lighting_AttackHold);
                 player.idleTimer = -player.fightStanceTime;
                 player.Action_StopSound();
@@ -307,7 +310,8 @@ namespace PlayableLighting.Patches
                 {
                     player.SetPlayerAnimation("CrouchAttack", null, null, false, true);
                     player.genericTimer = 0f;
-                    shotDelay = 5f;
+                    shotDelay = 10f;
+                    chargeShotDelay = 40f;
                     Action_Lighting_NormalShotFire();
                     player.idleTimer = -player.fightStanceTime;
                     player.Action_StopSound();
@@ -317,17 +321,20 @@ namespace PlayableLighting.Patches
                     player.SetPlayerAnimation("AttackGround", null, null, false, true);
                     player.genericTimer = 0f;
                     shotDelay = 5f;
+                    chargeShotDelay = 40f;
                     Action_Lighting_NormalShotFire();
                     player.idleTimer = -player.fightStanceTime;
                     player.Action_StopSound();
                 }
             }
-            else if (player.input.attackHold && shotDelay > 0f)
+            else if (player.input.attackHold && chargeShotDelay < 0f && shotDelay < 0f && player.energy > 95f)
             {
                 if (player.state == new FPObjectState(player.State_Crouching) && player.animator.GetCurrentAnimatorStateInfo(0).IsName("Crouching_Loop"))
                 {
                     player.SetPlayerAnimation("CrouchAttack", null, null, false, true);
                     player.genericTimer = 0f;
+                    shotDelay = 10f;
+                    chargeShotDelay = 40f;
                     player.state = new FPObjectState(State_Lighting_AttackHold);
                     player.idleTimer = -player.fightStanceTime;
                     player.Action_StopSound();
@@ -336,6 +343,8 @@ namespace PlayableLighting.Patches
                 {
                     player.SetPlayerAnimation("AttackGround", null, null, false, true);
                     player.genericTimer = 0f;
+                    shotDelay = 5f;
+                    chargeShotDelay = 50f;
                     player.state = new FPObjectState(State_Lighting_AttackHold);
                     player.idleTimer = -player.fightStanceTime;
                     player.Action_StopSound();
@@ -745,6 +754,7 @@ namespace PlayableLighting.Patches
 
                 flightAbilityCooldown -= FPStage.deltaTime;
                 shotDelay -= FPStage.deltaTime;
+                chargeShotDelay -= FPStage.deltaTime;
             }
         }
 
@@ -755,6 +765,16 @@ namespace PlayableLighting.Patches
             if (FPSaveManager.character == PlayableLighting.currentLightingID)
             {
                 player = __instance;
+                //Append 2 extra spare audio channels
+                //Channel 4 - Looping SFX
+                for (int i = 4; i < 6; i++) 
+                {
+                        GameObject gameObject = new GameObject("PlayerAudioSource");
+                        gameObject.transform.parent = player.gameObject.transform;
+                        player.audioChannel = player.audioChannel.AddToArray(gameObject.AddComponent<AudioSource>());
+                        player.audioChannel[i].volume = FPSaveManager.volumeSfx;
+                        player.audioChannel[i].playOnAwake = false;
+                }
             }
         }
 
