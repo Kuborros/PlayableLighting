@@ -156,7 +156,7 @@ namespace PlayableLighting.Patches
             chargeShot.animatorController = null; //LE IMPORTANTE TO FIXO
             chargeShot.animator = chargeShot.GetComponent<Animator>();
             chargeShot.animator.runtimeAnimatorController = chargeShot.animatorController;
-            chargeShot.attackPower = baseChargeProjectileDamage * player.GetAttackModifier() * Math.Min(maxChargeProjectileDamage, weaponCharge/10);
+            chargeShot.attackPower = (baseChargeProjectileDamage + Math.Min(maxChargeProjectileDamage, weaponCharge/10)) * player.GetAttackModifier();
             chargeShot.direction = player.direction;
             chargeShot.angle = player.angle;
             chargeShot.scale = chargeScale;
@@ -604,7 +604,7 @@ namespace PlayableLighting.Patches
                 PlaySFXLooping(chargeSfx, 1f);
                 player.genericTimer += FPStage.deltaTime;
                 player.energyRecoverRate = 0f;
-                weaponCharge += FPStage.deltaTime;
+                weaponCharge += 1f * FPStage.deltaTime;
                 player.energy -= 1f * FPStage.deltaTime;
 
                 if (player.onGround)
@@ -767,6 +767,7 @@ namespace PlayableLighting.Patches
                 player = __instance;
                 //Append 2 extra spare audio channels
                 //Channel 4 - Looping SFX
+                //Channel 5 - Things normal game logic should not mess with
                 for (int i = 4; i < 6; i++) 
                 {
                         GameObject gameObject = new GameObject("PlayerAudioSource");
