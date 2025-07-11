@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -11,6 +12,10 @@ namespace PlayableLighting.Patches
 
         public static FPPlayer player;
         public static PlayerShadow playerShadow;
+
+        public static AudioClip basicShotSfx;
+        public static AudioClip chargeShotSfx;
+        public static AudioClip chargeSfx;
 
         internal static float guardBuffer;
         internal static float jumpMultiplier;
@@ -29,6 +34,7 @@ namespace PlayableLighting.Patches
         private static float gravComboTimer = 0f;
 
         private static float weaponCharge = 0f;
+        private static float shotDelay = 10f;
 
         private static readonly float energyRecoveryBaseSpeed = 0.4f;
         private static readonly float baseProjectileDamage = 2f;
@@ -39,13 +45,15 @@ namespace PlayableLighting.Patches
         internal static readonly MethodInfo m_FuelPickup = SymbolExtensions.GetMethodInfo(() => Action_Lighting_FuelPickup());
         internal static readonly MethodInfo m_GroundMoves = SymbolExtensions.GetMethodInfo(() => Action_Lighting_GroundMoves());
 
+        private static readonly FPHitBox bulletHitbox = new FPHitBox { left = -16, right = 16, top = 16, bottom = -16, enabled = true };
+
 
         //Actions
 
 
         internal static void Action_Lighting_GravityBoots(bool reduceCost)
         {
-            if (flightAbilityUseCount >= 4) return;
+            if (flightAbilityUseCount >= 4 || flightAbilityCooldown > 0f) return;
 
             player.genericTimer = 0f;
             ghostTimer = 0f;
@@ -62,7 +70,7 @@ namespace PlayableLighting.Patches
 
         internal static void Action_Lighting_WingSmash(bool reduceCost)
         {
-            if (flightAbilityUseCount >= 2) return;
+            if (flightAbilityUseCount >= 2 || flightAbilityCooldown > 0f) return;
 
             player.genericTimer = 0f;
             ghostTimer = 0f;
@@ -84,6 +92,7 @@ namespace PlayableLighting.Patches
             {
                 num = -8f;
             }
+            FPAudio.PlaySfx(basicShotSfx);
             ProjectileBasic basicShot;
             if (player.direction == FPDirection.FACING_LEFT)
             {
@@ -113,6 +122,13 @@ namespace PlayableLighting.Patches
             basicShot.parentObject = player;
             basicShot.faction = player.faction;
             basicShot.timeBeforeCollisions = 0f;
+            basicShot.hbTouch = bulletHitbox;
+
+            if (player.powerups.Contains(FPPowerup.SHADOW_GUARD))
+            {
+
+            }
+
         }
 
         internal static void Action_Lighting_ChargedShotFire(Vector3 chargeScale)
@@ -122,6 +138,7 @@ namespace PlayableLighting.Patches
             {
                 num = -8f;
             }
+            FPAudio.PlaySfx(chargeShotSfx);
             ProjectileBasic chargeShot;
             if (player.direction == FPDirection.FACING_LEFT)
             {
@@ -138,7 +155,7 @@ namespace PlayableLighting.Patches
             chargeShot.animatorController = null; //LE IMPORTANTE TO FIXO
             chargeShot.animator = chargeShot.GetComponent<Animator>();
             chargeShot.animator.runtimeAnimatorController = chargeShot.animatorController;
-            chargeShot.attackPower = baseProjectileDamage * player.GetAttackModifier();
+            chargeShot.attackPower = baseChargeProjectileDamage * player.GetAttackModifier() * Math.Min(maxChargeProjectileDamage, weaponCharge/10);
             chargeShot.direction = player.direction;
             chargeShot.angle = player.angle;
             chargeShot.scale = chargeScale;
@@ -152,11 +169,17 @@ namespace PlayableLighting.Patches
             chargeShot.parentObject = player;
             chargeShot.faction = player.faction;
             chargeShot.timeBeforeCollisions = 0f;
+            chargeShot.hbTouch = bulletHitbox;
+
+            if (player.hasSpecialItem)
+            {
+
+            }
         }
 
         internal static void Action_Lighting_FuelPickup()
         {
-
+            player.hasSpecialItem = true;
         }
 
         internal static void Action_Lighting_AirMoves()
@@ -192,11 +215,20 @@ namespace PlayableLighting.Patches
                 GuardFlash guardFlash = (GuardFlash)FPStage.CreateStageObject(GuardFlash.classID, player.position.x, player.position.y);
                 guardFlash.parentObject = player;
             }
-            else if (player.input.attackPress)
+            else if (player.input.attackPress && shotDelay < 0f)
             {
                 player.SetPlayerAnimation("AirAttack", null, null, false, true);
                 player.genericTimer = 0f;
-                player.state = new FPObjectState(State_Lighting_AttackGun);
+                shotDelay = 5f;
+                Action_Lighting_NormalShotFire();
+                player.idleTimer = -player.fightStanceTime;
+                player.Action_StopSound();
+            }
+            else if (player.input.attackHold && shotDelay > 0f)
+            {
+                player.SetPlayerAnimation("AirAttack", null, null, false, true);
+                player.genericTimer = 0f;
+                player.state = new FPObjectState(State_Lighting_AttackHold);
                 player.idleTimer = -player.fightStanceTime;
                 player.Action_StopSound();
             }
@@ -269,21 +301,42 @@ namespace PlayableLighting.Patches
                 GuardFlash guardFlash = (GuardFlash)FPStage.CreateStageObject(GuardFlash.classID, player.position.x, player.position.y);
                 guardFlash.parentObject = player;
             }
-            else if (player.input.attackPress)
+            else if (player.input.attackPress && shotDelay < 0f)
             {
                 if (player.state == new FPObjectState(player.State_Crouching) && player.animator.GetCurrentAnimatorStateInfo(0).IsName("Crouching_Loop"))
                 {
                     player.SetPlayerAnimation("CrouchAttack", null, null, false, true);
                     player.genericTimer = 0f;
-                    player.state = new FPObjectState(State_Lighting_AttackGun);
+                    shotDelay = 5f;
+                    Action_Lighting_NormalShotFire();
                     player.idleTimer = -player.fightStanceTime;
                     player.Action_StopSound();
                 }
-                else if (player.state != new FPObjectState(State_Lighting_AttackGun))
+                else if (player.state != new FPObjectState(State_Lighting_AttackHold))
                 {
                     player.SetPlayerAnimation("AttackGround", null, null, false, true);
                     player.genericTimer = 0f;
-                    player.state = new FPObjectState(State_Lighting_AttackGun);
+                    shotDelay = 5f;
+                    Action_Lighting_NormalShotFire();
+                    player.idleTimer = -player.fightStanceTime;
+                    player.Action_StopSound();
+                }
+            }
+            else if (player.input.attackHold && shotDelay > 0f)
+            {
+                if (player.state == new FPObjectState(player.State_Crouching) && player.animator.GetCurrentAnimatorStateInfo(0).IsName("Crouching_Loop"))
+                {
+                    player.SetPlayerAnimation("CrouchAttack", null, null, false, true);
+                    player.genericTimer = 0f;
+                    player.state = new FPObjectState(State_Lighting_AttackHold);
+                    player.idleTimer = -player.fightStanceTime;
+                    player.Action_StopSound();
+                }
+                else if (player.state != new FPObjectState(State_Lighting_AttackHold))
+                {
+                    player.SetPlayerAnimation("AttackGround", null, null, false, true);
+                    player.genericTimer = 0f;
+                    player.state = new FPObjectState(State_Lighting_AttackHold);
                     player.idleTimer = -player.fightStanceTime;
                     player.Action_StopSound();
                 }
@@ -303,7 +356,7 @@ namespace PlayableLighting.Patches
                 Action_Lighting_GravityBoots(true);
             }
             //Gravity Boots but without spamming buttons
-            else if (player.input.up && player.input.specialHold) 
+            else if (player.input.up && player.input.specialHold)
             {
                 Action_Lighting_GravityBoots(false);
             }
@@ -374,6 +427,7 @@ namespace PlayableLighting.Patches
             player.superArmor = true;
             player.invincibilityTime = Mathf.Max(player.invincibilityTime, 50f);
             ghostTimer += FPStage.deltaTime;
+            flightAbilityCooldown = 20f;
             player.attackStats = new FPObjectState(AttackStats_GravityBoots);
 
             if (player.colliderRoof == null && player.colliderWall == null) player.velocity.x = gravAngleX;
@@ -421,7 +475,7 @@ namespace PlayableLighting.Patches
             }
             else
             {
-                player.energy -= 1.5f * FPStage.deltaTime;
+                player.energy -= 2f * FPStage.deltaTime;
             }
         }
 
@@ -474,6 +528,7 @@ namespace PlayableLighting.Patches
             player.superArmor = true;
             player.invincibilityTime = Mathf.Max(player.invincibilityTime, 50f);
             ghostTimer += FPStage.deltaTime;
+            flightAbilityCooldown = 20f;
             player.attackStats = new FPObjectState(AttackStats_WingSmash);
 
             if (Mathf.Repeat(player.genericTimer, 4f) < 1f)
@@ -484,28 +539,36 @@ namespace PlayableLighting.Patches
 
             if (player.direction == FPDirection.FACING_LEFT)
             {
-                player.velocity.x = Mathf.Min(Mathf.Min(player.velocity.x, 0f) * 0.5f - 5f, player.velocity.x);
+                player.velocity.x = Mathf.Min(Mathf.Min(player.velocity.x, 0f) * 0.5f - 4f, player.velocity.x);
                 player.velocity.y = 0f;
             }
             else
             {
-                player.velocity.x = Mathf.Max(Mathf.Max(player.velocity.x, 0f) * 0.5f + 5f, player.velocity.x);
+                player.velocity.x = Mathf.Max(Mathf.Max(player.velocity.x, 0f) * 0.5f + 4f, player.velocity.x);
                 player.velocity.y = 0f;
             }
 
             if (player.input.up)
             {
-                player.velocity.y = player.velocity.y + 5f * FPStage.deltaTime;
+                player.velocity.y = player.velocity.y + 7.5f * FPStage.deltaTime;
+                if (player.direction == FPDirection.FACING_RIGHT)
+                    player.angle = 10f;
+                else
+                    player.angle = -10f;
             }
             else if (player.input.down)
             {
-                player.velocity.y = player.velocity.y - 5f * FPStage.deltaTime;
+                player.velocity.y = player.velocity.y - 7.5f * FPStage.deltaTime;
+                if (player.direction == FPDirection.FACING_RIGHT)
+                    player.angle = -10f;
+                else
+                    player.angle = 10f;
             }
 
             player.energy -= 1f * FPStage.deltaTime;
             player.Process360Movement();
 
-            if (player.onGround || player.onGrindRail || !(player.input.left || player.input.right) || player.colliderWall != null || player.genericTimer >= 300f || player.energy <= 0f)
+            if (player.onGround || player.onGrindRail || player.colliderWall != null || (!player.input.specialHold && !player.input.jumpHold) || player.genericTimer >= 300f || player.energy <= 0f)
             {
                 player.energyRecoverRate = energyRecoveryBaseSpeed;
                 player.hbAttack.enabled = false;
@@ -524,58 +587,75 @@ namespace PlayableLighting.Patches
             }
         }
 
-        internal static void State_Lighting_AttackGun()
+        internal static void State_Lighting_AttackHold()
         {
-            SetAnimSpeedToVelocity(player);
-            player.genericTimer += FPStage.deltaTime;
-            if (player.animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 0.35f && player.velocity.y < 0f)
+            if (player.input.attackHold && player.energy > 0f)
             {
-                player.velocity.y = Mathf.Min(player.velocity.y + 0.4f, -1f);
-            }
+                SetAnimSpeedToVelocity(player);
+                PlaySFXLooping(chargeSfx, 1f);
+                player.genericTimer += FPStage.deltaTime;
+                player.energyRecoverRate = 0f;
+                weaponCharge += FPStage.deltaTime;
+                player.energy -= 1f * FPStage.deltaTime;
 
-
-
-
-
-            if (player.onGround)
-            {
-                if (player.input.jumpPress)
+                if (player.onGround)
                 {
-                    player.genericTimer = 0f;
-                    player.Action_SoftJump();
-                }
-                else if (player.onGrindRail)
-                {
-                    player.PseudoGrindRail();
+                    if (player.input.jumpPress)
+                    {
+                        player.genericTimer = 0f;
+                        player.Action_SoftJump();
+                    }
+                    else if (player.onGrindRail)
+                    {
+                        player.PseudoGrindRail();
+                    }
+                    else
+                    {
+                        ApplyGroundForces(player, false);
+                        player.angle = player.groundAngle;
+                    }
+                    player.jumpAbilityFlag = false;
                 }
                 else
                 {
-                    ApplyGroundForces(player,false);
-                    player.angle = player.groundAngle;
+                    ApplyAirForces(player, false);
+                    ApplyGravityForce(player);
+                    RotatePlayerUpright(player);
+                    if (!player.input.jumpHold && player.jumpReleaseFlag)
+                    {
+                        player.jumpReleaseFlag = false;
+                        if (player.velocity.y > player.jumpRelease)
+                        {
+                            player.velocity.y = player.jumpRelease;
+                        }
+                    }
+                    if (player.targetWaterSurface != null)
+                    {
+                        ApplyWaterForces(player);
+                        player.velocity.y = player.velocity.y + 0.3f * FPStage.deltaTime;
+                        if (player.velocity.y < -4.5f)
+                        {
+                            player.velocity.y = -4.5f;
+                        }
+                    }
                 }
-                player.jumpAbilityFlag = false;
-            }
+            } 
             else
             {
-                ApplyAirForces(player,false);
-                ApplyGravityForce(player);
-                RotatePlayerUpright(player);
-                if (!player.input.jumpHold && player.jumpReleaseFlag)
+                StopSFXLooping();
+                player.energyRecoverRate = energyRecoveryBaseSpeed;
+                if (weaponCharge > 0f)
                 {
-                    player.jumpReleaseFlag = false;
-                    if (player.velocity.y > player.jumpRelease)
-                    {
-                        player.velocity.y = player.jumpRelease;
-                    }
+                    Action_Lighting_ChargedShotFire(new Vector3(1,1,1));
                 }
-                if (player.targetWaterSurface != null)
+                if (player.onGround)
                 {
-                    ApplyWaterForces(player);
-                    player.velocity.y = player.velocity.y + 0.3f * FPStage.deltaTime;
-                    if (player.velocity.y < -4.5f)
-                    {
-                        player.velocity.y = -4.5f;
-                    }
+                    player.state = new FPObjectState(player.State_Ground);
+                }
+                else
+                {
+                    player.SetPlayerAnimation("Jumping", 0.25f, 0.25f, false, true);
+                    player.state = new FPObjectState(player.State_InAir);
                 }
             }
         }
@@ -623,20 +703,58 @@ namespace PlayableLighting.Patches
             player.attackPower *= player.GetAttackModifier();
         }
 
+        //Others
+
+        private static void PlaySFXLooping(AudioClip clip, float volume)
+        {
+            //Channel 4 is used for Carol's bike, so we can repurpose it here.
+            if (clip != null)
+            {
+                if (player.audioChannel[4].clip != clip)
+                {
+                    player.audioChannel[4].clip = clip;
+                    player.audioChannel[4].Play();
+                }
+                player.audioChannel[4].volume = volume;
+            }
+        }
+
+        private static void StopSFXLooping()
+        {
+            player.audioChannel[4].Stop();
+            player.audioChannel[4].clip = null;
+        }
+
         //Postfixes
         [HarmonyPostfix]
         [HarmonyPatch(typeof(FPPlayer), "Update", MethodType.Normal)]
         static void PatchPlayerUpdate(FPPlayer __instance, float ___speedMultiplier, float ___guardBuffer, float ___jumpMultiplier)
         {
-            //Value Yeeter 10000
-            player = __instance;
-            guardBuffer = ___guardBuffer;
-            jumpMultiplier = ___jumpMultiplier;
-            speedMultiplier = ___speedMultiplier;
-
-            if (player.onGround || player.onGrindRail)
+            if (FPSaveManager.character == PlayableLighting.currentLightingID)
             {
-                flightAbilityUseCount = 0;
+                //Value Yeeter 10000
+                player = __instance;
+                guardBuffer = ___guardBuffer;
+                jumpMultiplier = ___jumpMultiplier;
+                speedMultiplier = ___speedMultiplier;
+
+                if (player.onGround || player.onGrindRail)
+                {
+                    flightAbilityUseCount = 0;
+                }
+
+                flightAbilityCooldown -= FPStage.deltaTime;
+                shotDelay -= FPStage.deltaTime;
+            }
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(FPPlayer), "Start", MethodType.Normal)]
+        static void PatchPlayerStart(FPPlayer __instance)
+        {
+            if (FPSaveManager.character == PlayableLighting.currentLightingID)
+            {
+                player = __instance;
             }
         }
 
