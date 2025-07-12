@@ -9,8 +9,8 @@ namespace PlayableLighting.Patches
         static void PatchGuideUpdate(FPPlayer player, FPHudMaster __instance)
         {
             string text = "Jump";
-            string text2 = "Attack";
-            string text3 = "<c=energy>Special</c>";
+            string text2 = "Single Shot";
+            string text3 = "<c=energy>Wing Special</c>";
             string text4 = "Guard";
 
             if (player == null || player.characterID != PlayableLighting.currentLightingID)
@@ -28,48 +28,58 @@ namespace PlayableLighting.Patches
             //Mid-air
             if (!player.onGround && player.state != new FPObjectState(player.State_LadderClimb))
             {
-                //No double-jump for Spade
-                text = "-";
+                text = "Double Jump";
                 if (player.state != new FPObjectState(player.State_Ball) && player.state != new FPObjectState(player.State_Ball_Physics) && player.state != new FPObjectState(player.State_Ball_Vulnerable))
                 {
-                    text3 = "<c=energy>Energy Special</c>";
+                    if (player.input.left || player.input.right)
+                    {
+                        text3 = "<c=energy>Wing Smash</c>";
+                    }
+                    else if (player.input.up || player.input.down)
+                    {
+                        text3 = "<c=energy>Gravity Boots</c>";
+                    }
+                    else
+                        text3 = "<c=energy>-</c>";
                 }
+                if (!player.input.attackHold)
+                {
+                    text2 = "Single Shot";
+                }
+                else
+                {
+                    text2 = "<c=energy>(Hold) Charge Shot</c>";
+                }
+
             }
 
             //On the ground, excluding funky states
             if (player.state != new FPObjectState(player.State_LadderClimb) && player.state != new FPObjectState(player.State_Ball) && player.state != new FPObjectState(player.State_Ball_Physics) && player.state != new FPObjectState(player.State_Ball_Vulnerable))
             {
-                if (player.input.down && !player.input.up)
+                if (player.input.down)
                 {
-                    if (player.state == new FPObjectState(player.State_Crouching) || (player.onGround && player.groundVel == 0f))
+                    text2 = "Crouch shot";
+                }
+                else
+                {
+                    if (!player.input.attackHold)
                     {
-                        text2 = "Crouch Attack";
+                        text2 = "Single Shot";
                     }
                     else
                     {
-                        text2 = "Downwards Attack";
+                        text2 = "<c=energy>(Hold) Charge Shot</c>";
                     }
                 }
                 if (player.input.up && !player.input.down)
                 {
-                    text2 = "Upwards Attack";
+                    text3 = "<c=energy>Gravity Boots</c>";
                 }
                 if (player.onGround)
                 {
-                    text3 = "<c=energy>Energy Attack</c>";
+                    text3 = "<c=energy>-</c>";
                 }
             }
-            /*
-            if (PatchFPPlayer.upDash && !Plugin.configDashOnDoubleJump.Value)
-            {
-                if (player.input.down || player.input.downPress)
-                {
-                    text4 = "Ground Pound";
-                }
-                else
-                    text4 = "Dodge Dash";
-            }
-            */
 
             if (player.displayMoveJump != string.Empty)
             {

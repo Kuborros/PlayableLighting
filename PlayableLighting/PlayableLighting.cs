@@ -76,7 +76,7 @@ namespace PlayableLighting
                 powerupStartDescription = "You begin the stage with Charge Gem ready.",
                 profilePic = dataBundle.LoadAsset<Sprite>("Lighting_portrait"),
                 keyArtSprite = dataBundle.LoadAsset<Sprite>("Lighting_KeyArt"),
-                endingKeyArtSprite = dataBundle.LoadAsset<Sprite>("Lighting_KeyArt"),
+                endingKeyArtSprite = dataBundle.LoadAsset<Sprite>("Lighting_EndingArt"),
                 charSelectName = dataBundle.LoadAsset<Sprite>("Lighting-File-Select"),
                 piedSprite = null,//(Sprite)dataBundle.LoadAssetWithSubAssets("Lighting_Pie")[1],
                 piedHurtSprite = null,//(Sprite)dataBundle.LoadAssetWithSubAssets("Lighting_Pie")[2],

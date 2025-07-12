@@ -42,11 +42,19 @@ namespace PlayableLighting.Patches
         private static readonly float baseChargeProjectileDamage = 2f;
         private static readonly float maxChargeProjectileDamage = 10f;
 
+        private static RuntimeAnimatorController baseProjectile;
+        private static RuntimeAnimatorController partChargeProjectile;
+        private static RuntimeAnimatorController fullChargeProjectile;
+        private static RuntimeAnimatorController uberChargeProjectile;
+
         internal static readonly MethodInfo m_AirMoves = SymbolExtensions.GetMethodInfo(() => Action_Lighting_AirMoves());
         internal static readonly MethodInfo m_FuelPickup = SymbolExtensions.GetMethodInfo(() => Action_Lighting_FuelPickup());
         internal static readonly MethodInfo m_GroundMoves = SymbolExtensions.GetMethodInfo(() => Action_Lighting_GroundMoves());
 
-        private static readonly FPHitBox bulletHitbox = new FPHitBox { left = -16, right = 16, top = 16, bottom = -16, enabled = true };
+        private static readonly FPHitBox bulletHitbox = new FPHitBox { left = -8, right = 8, top = 4, bottom = -4, enabled = true };
+        private static readonly FPHitBox chargeBulletHitbox = new FPHitBox { left = -10, right = 10, top = 10, bottom = -10, enabled = true };
+        private static readonly FPHitBox fullChargeBulletHitbox = new FPHitBox { left = -30, right = 30, top = 14, bottom = -14, enabled = true };
+        private static readonly FPHitBox uberChargeBulletHitbox = new FPHitBox { left = -35, right = 35, top = 25, bottom = -25, enabled = true };
 
 
         //Actions
@@ -107,11 +115,16 @@ namespace PlayableLighting.Patches
                 basicShot.velocity.x = Mathf.Cos(0.017453292f * player.angle) * 20f;
                 basicShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * 20f;
             }
-            basicShot.animatorController = null; //LE IMPORTANTE TO FIXO
+            basicShot.animatorController = baseProjectile;
             basicShot.animator = basicShot.GetComponent<Animator>();
             basicShot.animator.runtimeAnimatorController = basicShot.animatorController;
             basicShot.attackPower = baseProjectileDamage * player.GetAttackModifier();
             basicShot.direction = player.direction;
+            //Very dumb hack
+            if (player.direction == FPDirection.FACING_LEFT)
+                basicShot.direction = FPDirection.FACING_RIGHT;
+            else
+                basicShot.direction = FPDirection.FACING_LEFT;
             basicShot.angle = player.angle;
             basicShot.damageElementType = -1;
             basicShot.explodeType = FPExplodeType.WHITEBURST;
@@ -124,6 +137,8 @@ namespace PlayableLighting.Patches
             basicShot.faction = player.faction;
             basicShot.timeBeforeCollisions = 0f;
             basicShot.hbTouch = bulletHitbox;
+            basicShot.halfHeight = 4;
+            basicShot.halfWidth = 8;
 
             if (player.powerups.Contains(FPPowerup.SHADOW_GUARD))
             {
@@ -153,13 +168,31 @@ namespace PlayableLighting.Patches
                 chargeShot.velocity.x = Mathf.Cos(0.017453292f * player.angle) * 20f;
                 chargeShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * 20f;
             }
-            chargeShot.animatorController = null; //LE IMPORTANTE TO FIXO
+
+
+            if (weaponCharge > 90f)
+            {
+                chargeShot.animatorController = fullChargeProjectile;
+                chargeShot.hbTouch = fullChargeBulletHitbox;
+                chargeShot.halfHeight = 14;
+                chargeShot.halfWidth = 30;
+            }
+            else
+            {
+                chargeShot.animatorController = partChargeProjectile;
+                chargeShot.hbTouch = chargeBulletHitbox;
+                chargeShot.halfHeight = 10;
+                chargeShot.halfWidth = 10;
+            }
             chargeShot.animator = chargeShot.GetComponent<Animator>();
             chargeShot.animator.runtimeAnimatorController = chargeShot.animatorController;
             chargeShot.attackPower = (baseChargeProjectileDamage + Math.Min(maxChargeProjectileDamage, weaponCharge/10)) * player.GetAttackModifier();
-            chargeShot.direction = player.direction;
+            //Idiotic hack
+            if (player.direction == FPDirection.FACING_LEFT)
+                chargeShot.direction = FPDirection.FACING_RIGHT;
+            else
+                chargeShot.direction = FPDirection.FACING_LEFT;
             chargeShot.angle = player.angle;
-            chargeShot.scale = chargeScale;
             chargeShot.damageElementType = 3;
             chargeShot.explodeType = FPExplodeType.EXPLOSION;
             chargeShot.ignoreTerrain = false;
@@ -170,12 +203,19 @@ namespace PlayableLighting.Patches
             chargeShot.parentObject = player;
             chargeShot.faction = player.faction;
             chargeShot.timeBeforeCollisions = 0f;
-            chargeShot.hbTouch = bulletHitbox;
 
             if (player.hasSpecialItem)
             {
+                chargeShot.animatorController = uberChargeProjectile;
+                chargeShot.hbTouch = uberChargeBulletHitbox;
+                chargeShot.halfHeight = 10;
+                chargeShot.halfWidth = 10;
 
+                chargeShot.attackPower *= 2;
             }
+
+            weaponCharge = 0f;
+
         }
 
         internal static void Action_Lighting_FuelPickup()
@@ -226,7 +266,7 @@ namespace PlayableLighting.Patches
                 player.idleTimer = -player.fightStanceTime;
                 player.Action_StopSound();
             }
-            else if (player.input.attackHold && shotDelay < 0f && chargeShotDelay < 0f && player.energy > 95f)
+            else if (player.input.attackHold && shotDelay < 0f && chargeShotDelay < 0f && player.energy > 20f)
             {
                 player.SetPlayerAnimation("AirAttack", null, null, false, true);
                 shotDelay = 10f;
@@ -327,7 +367,7 @@ namespace PlayableLighting.Patches
                     player.Action_StopSound();
                 }
             }
-            else if (player.input.attackHold && chargeShotDelay < 0f && shotDelay < 0f && player.energy > 95f)
+            else if (player.input.attackHold && chargeShotDelay < 0f && shotDelay < 0f && player.energy > 20f)
             {
                 if (player.state == new FPObjectState(player.State_Crouching) && player.animator.GetCurrentAnimatorStateInfo(0).IsName("Crouching_Loop"))
                 {
@@ -604,6 +644,7 @@ namespace PlayableLighting.Patches
                 PlaySFXLooping(chargeSfx, 1f);
                 player.genericTimer += FPStage.deltaTime;
                 player.energyRecoverRate = 0f;
+                player.blueFlashTimer = 5f;
                 weaponCharge += 1f * FPStage.deltaTime;
                 player.energy -= 1f * FPStage.deltaTime;
 
@@ -768,14 +809,21 @@ namespace PlayableLighting.Patches
                 //Append 2 extra spare audio channels
                 //Channel 4 - Looping SFX
                 //Channel 5 - Things normal game logic should not mess with
-                for (int i = 4; i < 6; i++) 
+                for (int i = 4; i < 6; i++)
                 {
-                        GameObject gameObject = new GameObject("PlayerAudioSource");
-                        gameObject.transform.parent = player.gameObject.transform;
-                        player.audioChannel = player.audioChannel.AddToArray(gameObject.AddComponent<AudioSource>());
-                        player.audioChannel[i].volume = FPSaveManager.volumeSfx;
-                        player.audioChannel[i].playOnAwake = false;
+                    GameObject gameObject = new GameObject("PlayerAudioSource");
+                    gameObject.transform.parent = player.gameObject.transform;
+                    player.audioChannel = player.audioChannel.AddToArray(gameObject.AddComponent<AudioSource>());
+                    player.audioChannel[i].volume = FPSaveManager.volumeSfx;
+                    player.audioChannel[i].playOnAwake = false;
                 }
+
+                //Load projectile animations
+                baseProjectile = PlayableLighting.dataBundle.LoadAsset<RuntimeAnimatorController>("BaseProjectile");
+                partChargeProjectile = PlayableLighting.dataBundle.LoadAsset<RuntimeAnimatorController>("PartChargeProjectile");
+                fullChargeProjectile = PlayableLighting.dataBundle.LoadAsset<RuntimeAnimatorController>("FullChargeProjectile");
+                uberChargeProjectile = PlayableLighting.dataBundle.LoadAsset<RuntimeAnimatorController>("UberChargeProjectile");
+
             }
         }
 
