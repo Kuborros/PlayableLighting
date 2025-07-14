@@ -1,22 +1,76 @@
 ﻿using HarmonyLib;
+using UnityEngine;
 
 namespace PlayableLighting.Patches
 {
     internal class PatchFPHudMaster
     {
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(FPHudMaster), "Start", MethodType.Normal)]
+        static void PatchFPHudMasterStart(ref GameObject ___pfHudBase, ref GameObject ___pfHudEnergyIcon, ref GameObject ___pfHudEnergyBar)
+        {
+            if (FPSaveManager.character == PlayableLighting.currentLightingID)
+            {
+                ___pfHudBase = PlayableLighting.dataBundle.LoadAsset<GameObject>("Hud Base Lighting");
+                ___pfHudEnergyIcon = PlayableLighting.dataBundle.LoadAsset<GameObject>("Hud Energy Icon Lighting");
+                ___pfHudEnergyBar = PlayableLighting.dataBundle.LoadAsset<GameObject>("Hud Energy Bar Lighting");
+            }
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(FPHudMaster), "Start", MethodType.Normal)]
+        static void PatchFPHudMasterStartPost(FPPlayer ___targetPlayer, ref FPHudDigit[] ___hudLifePetals, ref FPHudDigit[] ___hudShields, ref FPHudDigit[] ___hudEnergy)
+        {
+            if (___targetPlayer.characterID == PlayableLighting.currentLightingID)
+            {
+                Vector3 posEnergy = ___hudEnergy[0].transform.position;
+                posEnergy.x = 6;
+                ___hudEnergy[0].transform.position = posEnergy;
+
+                //Can be 7 without the item if someone is using some other mod
+                if (___targetPlayer.IsPowerupActive(FPPowerup.MAX_LIFE_UP) || ___targetPlayer.healthMax == 7)
+                {
+                    Vector3 pos = ___hudLifePetals[0].transform.position;
+                    pos.x += 2;
+                    ___hudLifePetals[0].transform.position = pos;
+
+                    for (int i = 1; i < 7; i++)
+                    {
+                        pos = ___hudLifePetals[i].transform.position;
+                        pos.x -= 2*i;
+                        ___hudLifePetals[i].transform.position = pos;
+                    }
+
+                    //Shields need moving too
+                    pos = ___hudShields[0].transform.position;
+                    pos.x += 1;
+                    ___hudShields[0].transform.position = pos;
+
+                    for (int i = 1; i < 14; i++)
+                    {
+                        pos = ___hudShields[i].transform.position;
+                        pos.x -= i;
+                        ___hudShields[i].transform.position = pos;
+                    }
+
+                }
+            }
+        }
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(FPHudMaster), "GuideUpdate", MethodType.Normal)]
         static void PatchGuideUpdate(FPPlayer player, FPHudMaster __instance)
         {
+            if (player == null || player.characterID != PlayableLighting.currentLightingID)
+            {
+                return;
+            }
+
             string text = "Jump";
             string text2 = "Single Shot";
             string text3 = "<c=energy>Wing Special</c>";
             string text4 = "Guard";
 
-            if (player == null || player.characterID != PlayableLighting.currentLightingID)
-            {
-                return;
-            }
             if (player.IsKOd(false))
             {
                 text = "-";

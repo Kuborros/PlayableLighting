@@ -74,7 +74,7 @@ namespace PlayableLighting
                 Gender = CharacterGender.FEMALE,
                 element = CharacterElement.METAL,
                 powerupStartDescription = "You begin the stage with Charge Gem ready.",
-                profilePic = dataBundle.LoadAsset<Sprite>("Lighting_portrait"),
+                profilePic = dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Profile")[0],
                 keyArtSprite = dataBundle.LoadAsset<Sprite>("Lighting_KeyArt"),
                 endingKeyArtSprite = dataBundle.LoadAsset<Sprite>("Lighting_EndingArt"),
                 charSelectName = dataBundle.LoadAsset<Sprite>("Lighting-File-Select"),

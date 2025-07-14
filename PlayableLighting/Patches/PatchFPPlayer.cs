@@ -140,7 +140,7 @@ namespace PlayableLighting.Patches
             basicShot.halfHeight = 4;
             basicShot.halfWidth = 8;
 
-            if (player.powerups.Contains(FPPowerup.SHADOW_GUARD))
+            if (player.IsPowerupActive(FPPowerup.SHADOW_GUARD))
             {
 
             }
@@ -204,7 +204,7 @@ namespace PlayableLighting.Patches
             chargeShot.faction = player.faction;
             chargeShot.timeBeforeCollisions = 0f;
 
-            if (player.hasSpecialItem)
+            if (player.hasSpecialItem && weaponCharge > 90f)
             {
                 chargeShot.animatorController = uberChargeProjectile;
                 chargeShot.hbTouch = uberChargeBulletHitbox;
@@ -614,10 +614,10 @@ namespace PlayableLighting.Patches
                     player.angle = 10f;
             }
 
-            player.energy -= 1f * FPStage.deltaTime;
+            player.energy -= 1.5f * FPStage.deltaTime;
             player.Process360Movement();
 
-            if (player.onGround || player.onGrindRail || player.colliderWall != null || (!player.input.specialHold && !player.input.jumpHold) || player.genericTimer >= 300f || player.energy <= 0f)
+            if (player.onGround || player.onGrindRail || player.colliderWall != null || (!player.input.specialHold && !player.input.jumpHold) || player.genericTimer >= 100f || player.energy <= 0f)
             {
                 player.energyRecoverRate = energyRecoveryBaseSpeed;
                 player.hbAttack.enabled = false;
