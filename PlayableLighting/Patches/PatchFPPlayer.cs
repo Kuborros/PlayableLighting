@@ -260,7 +260,7 @@ namespace PlayableLighting.Patches
             {
                 player.SetPlayerAnimation("AirAttack", null, null, false, true);
                 player.genericTimer = 0f;
-                shotDelay = 10f;
+                shotDelay = 5f;
                 chargeShotDelay = 40f;
                 Action_Lighting_NormalShotFire();
                 player.idleTimer = -player.fightStanceTime;
@@ -269,7 +269,7 @@ namespace PlayableLighting.Patches
             else if (player.input.attackHold && shotDelay < 0f && chargeShotDelay < 0f && player.energy > 20f)
             {
                 player.SetPlayerAnimation("AirAttack", null, null, false, true);
-                shotDelay = 10f;
+                shotDelay = 5f;
                 chargeShotDelay = 40f;
                 player.state = new FPObjectState(State_Lighting_AttackHold);
                 player.idleTimer = -player.fightStanceTime;
@@ -350,7 +350,7 @@ namespace PlayableLighting.Patches
                 {
                     player.SetPlayerAnimation("CrouchAttack", null, null, false, true);
                     player.genericTimer = 0f;
-                    shotDelay = 10f;
+                    shotDelay = 5f;
                     chargeShotDelay = 40f;
                     Action_Lighting_NormalShotFire();
                     player.idleTimer = -player.fightStanceTime;
@@ -373,7 +373,7 @@ namespace PlayableLighting.Patches
                 {
                     player.SetPlayerAnimation("CrouchAttack", null, null, false, true);
                     player.genericTimer = 0f;
-                    shotDelay = 10f;
+                    shotDelay = 5f;
                     chargeShotDelay = 40f;
                     player.state = new FPObjectState(State_Lighting_AttackHold);
                     player.idleTimer = -player.fightStanceTime;

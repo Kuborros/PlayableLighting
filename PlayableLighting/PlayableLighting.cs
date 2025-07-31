@@ -37,8 +37,8 @@ namespace PlayableLighting
             }
 
             //Initialise music
-            AudioClip lightingClear = dataBundle.LoadAsset<AudioClip>("M_Clear_Lighting");
-            AudioClip lightingTheme = dataBundle.LoadAsset<AudioClip>("M_Theme_Lighting");
+            AudioClip lightingClear = dataBundle.LoadAsset<AudioClip>("m_results_lighting");
+            AudioClip lightingTheme = dataBundle.LoadAsset<AudioClip>("m_theme_lighting");
 
             //Add Vinyls
             VinylHandler.RegisterVinyl("kubo.m_clear_lighting", "Results - Lighting", lightingClear, VAddToShop.Naomi);
@@ -51,8 +51,6 @@ namespace PlayableLighting
             //BadgeHandler.RegisterBadge("kubo.lightingcomplete", "Future Preserved", "Finish the game as Lighting.", dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Badges")[3], FPBadgeType.GOLD);
 
             //Load character select object
-            GameObject lightingWheel = dataBundle.LoadAsset<GameObject>("Menu CS Character Lighting");
-
             PlayableChara lightingChar = new PlayableChara()
             {
                 uid = "com.kuborro.lighting",
@@ -89,7 +87,8 @@ namespace PlayableLighting
                 resultsTrack = lightingClear,
                 endingTrack = lightingTheme,
                 menuPhotoPose = new MenuPhotoPose(),
-                characterSelectPrefab = lightingWheel,
+                characterSelectPrefab = dataBundle.LoadAsset<GameObject>("Menu CS Character Lighting"),
+                menuInstructionPrefab = dataBundle.LoadAsset<GameObject>("MenuInstructionsLighting"),
                 prefab = dataBundle.LoadAsset<GameObject>("Player Lighting"),
                 dataBundle = dataBundle
             };
