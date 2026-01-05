@@ -411,8 +411,6 @@ namespace PlayableLighting.Patches
             }
         }
 
-
-
         //States
 
         internal static void State_Lighting_GravityBoots_P1()
@@ -824,6 +822,13 @@ namespace PlayableLighting.Patches
                 fullChargeProjectile = PlayableLighting.dataBundle.LoadAsset<RuntimeAnimatorController>("FullChargeProjectile");
                 uberChargeProjectile = PlayableLighting.dataBundle.LoadAsset<RuntimeAnimatorController>("UberChargeProjectile");
 
+            }
+
+            //Fast Ladders (truly the most OP item in MM8)
+            //Works for all characters.
+            if (__instance.powerups.Contains(PlayableLighting.fastLaddersID))
+            {
+                __instance.climbingSpeed = 2 * __instance.climbingSpeed;
             }
         }
 

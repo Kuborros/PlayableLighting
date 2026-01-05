@@ -1,6 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
 using FP2Lib.Badge;
+using FP2Lib.Item;
 using FP2Lib.Player;
 using FP2Lib.Vinyl;
 using HarmonyLib;
@@ -10,7 +11,7 @@ using UnityEngine;
 
 namespace PlayableLighting
 {
-    [BepInPlugin("com.kuborro.plugins.fp2.playablelighting", "Lighting", "1.0.0")]
+    [BepInPlugin("com.kuborro.plugins.fp2.playablelighting", "Lighting", "1.0.0.1")]
     [BepInDependency("000.kuborro.libraries.fp2.fp2lib")]
     public class PlayableLighting : BaseUnityPlugin
     {
@@ -20,6 +21,7 @@ namespace PlayableLighting
         public static AssetBundle tutorialScene;
 
         internal static FPCharacterID currentLightingID;
+        internal static FPPowerup fastLaddersID;
 
         private void Awake()
         {
@@ -50,6 +52,10 @@ namespace PlayableLighting
             //BadgeHandler.RegisterBadge("kubo.lightingmaster", "Winged Master", "Beat the par times in all stages as Lighting.", dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Badges")[2], FPBadgeType.GOLD);
             //BadgeHandler.RegisterBadge("kubo.lightingcomplete", "Future Preserved", "Finish the game as Lighting.", dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Badges")[3], FPBadgeType.GOLD);
 
+            //Add Items
+            Sprite stepBooster = dataBundle.LoadAsset<Sprite>("StepBooster");
+            ItemHandler.RegisterItem("kubo.fast_ladders","Step Booster", stepBooster, "Lets you climb ladders faster!");
+
             //Load character select object
             PlayableChara lightingChar = new PlayableChara()
             {
@@ -76,8 +82,8 @@ namespace PlayableLighting
                 keyArtSprite = dataBundle.LoadAsset<Sprite>("Lighting_KeyArt"),
                 endingKeyArtSprite = dataBundle.LoadAsset<Sprite>("Lighting_EndingArt"),
                 charSelectName = dataBundle.LoadAsset<Sprite>("Lighting-File-Select"),
-                piedSprite = null,//(Sprite)dataBundle.LoadAssetWithSubAssets("Lighting_Pie")[1],
-                piedHurtSprite = null,//(Sprite)dataBundle.LoadAssetWithSubAssets("Lighting_Pie")[2],
+                piedSprite = null,//(Sprite)dataBundle.LoadAssetWithSubAssets("Lighting_Pie")[0],
+                piedHurtSprite = null,//(Sprite)dataBundle.LoadAssetWithSubAssets("Lighting_Pie")[1],
                 itemFuel = dataBundle.LoadAsset<Sprite>("ItemFuelCrystal"),
                 worldMapPauseSprite = dataBundle.LoadAsset<Sprite>("lighting_Pause"),
                 zaoBaseballSprite = dataBundle.LoadAsset<Sprite>("LightingZLBall"),
@@ -86,6 +92,7 @@ namespace PlayableLighting
                 sagaBlockSyntax = dataBundle.LoadAsset<RuntimeAnimatorController>("Saga2Lighting"),
                 resultsTrack = lightingClear,
                 endingTrack = lightingTheme,
+                playerBoss = null,
                 menuPhotoPose = new MenuPhotoPose(),
                 characterSelectPrefab = dataBundle.LoadAsset<GameObject>("Menu CS Character Lighting"),
                 menuInstructionPrefab = dataBundle.LoadAsset<GameObject>("MenuInstructionsLighting"),
