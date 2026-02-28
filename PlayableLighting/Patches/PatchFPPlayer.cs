@@ -1,7 +1,5 @@
 ﻿using HarmonyLib;
 using System;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -11,7 +9,6 @@ namespace PlayableLighting.Patches
     {
 
         public static FPPlayer player;
-        public static PlayerShadow playerShadow;
 
         public static AudioClip basicShotSfx;
         public static AudioClip chargeShotSfx;
@@ -787,6 +784,26 @@ namespace PlayableLighting.Patches
             spriteGhost.activationMode = FPActivationMode.ALWAYS_ACTIVE;
         }
 
+        private static void ResetStaticVars()
+        {
+            //Reset all static vars on level start
+            //Prevents smuggling weird values between stages
+
+            ghostTimer = 0f;
+            gravAngleX = 0f;
+            gravAngleY = 0f;
+
+            flightAbilityUseCount = 0;
+            flightAbilityCooldown = 0f;
+
+            wingSmashComboStep = 0;
+            gravBootsComboStep = 0;
+            wingComboTimer = 0f;
+            gravComboTimer = 0f;
+
+            weaponCharge = 0f;
+        }
+
         //Postfixes
         [HarmonyPostfix]
         [HarmonyPatch(typeof(FPPlayer), "Update", MethodType.Normal)]
@@ -823,6 +840,8 @@ namespace PlayableLighting.Patches
             if (FPSaveManager.character == PlayableLighting.currentLightingID)
             {
                 player = __instance;
+                ResetStaticVars();
+
                 //Append 2 extra spare audio channels
                 //Channel 4 - Looping SFX
                 //Channel 5 - Things normal game logic should not mess with
@@ -849,7 +868,7 @@ namespace PlayableLighting.Patches
 
             //Fast Ladders (truly the most OP item in MM8)
             //Works for all characters.
-            if (__instance.powerups.Contains(PlayableLighting.fastLaddersID))
+            if (__instance.IsPowerupActive(PlayableLighting.fastLaddersID))
             {
                 __instance.climbingSpeed = 2 * __instance.climbingSpeed;
             }
