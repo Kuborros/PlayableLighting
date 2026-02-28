@@ -482,7 +482,8 @@ namespace PlayableLighting.Patches
 
             if (ghostTimer >= 0.5f)
             {
-                player.Ghost();
+                //player.Ghost();
+                Ghost();
                 ghostTimer = 0f;
             }
             player.Process360Movement();
@@ -773,6 +774,19 @@ namespace PlayableLighting.Patches
             player.audioChannel[4].clip = null;
         }
 
+        private static void Ghost()
+        {
+            Color start = new Color(1f, 1f, 1f, 0.8f);
+            Color end = new Color(1f, 1f, 1f, 0f);
+            SpriteGhost spriteGhost = (SpriteGhost)FPStage.CreateStageObject(SpriteGhost.classID, player.transform.position.x, player.transform.position.y);
+            spriteGhost.transform.rotation = player.transform.rotation;
+            spriteGhost.SetUp(player.gameObject.GetComponent<SpriteRenderer>().sprite, start, end, 0.5f, 3f);
+            spriteGhost.transform.localScale = player.transform.localScale;
+            spriteGhost.maxLifeTime = 0.5f;
+            spriteGhost.growSpeed = 0f;
+            spriteGhost.activationMode = FPActivationMode.ALWAYS_ACTIVE;
+        }
+
         //Postfixes
         [HarmonyPostfix]
         [HarmonyPatch(typeof(FPPlayer), "Update", MethodType.Normal)]
@@ -790,11 +804,16 @@ namespace PlayableLighting.Patches
                 {
                     flightAbilityUseCount = 0;
                 }
-
-                flightAbilityCooldown -= FPStage.deltaTime;
-                shotDelay -= FPStage.deltaTime;
-                chargeShotDelay -= FPStage.deltaTime;
             }
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(FPPlayer), "LateUpdate", MethodType.Normal)]
+        static void PatchLateUpdate(FPPlayer __instance)
+        {
+            flightAbilityCooldown -= FPStage.deltaTime;
+            shotDelay -= FPStage.deltaTime;
+            chargeShotDelay -= FPStage.deltaTime;
         }
 
         [HarmonyPostfix]
@@ -821,6 +840,10 @@ namespace PlayableLighting.Patches
                 partChargeProjectile = PlayableLighting.dataBundle.LoadAsset<RuntimeAnimatorController>("PartChargeProjectile");
                 fullChargeProjectile = PlayableLighting.dataBundle.LoadAsset<RuntimeAnimatorController>("FullChargeProjectile");
                 uberChargeProjectile = PlayableLighting.dataBundle.LoadAsset<RuntimeAnimatorController>("UberChargeProjectile");
+
+                //Spooky
+                GameObject ghost = PlayableLighting.dataBundle.LoadAsset<GameObject>("Tyler Dash Ghost");
+                GameObject.Instantiate(ghost);
 
             }
 

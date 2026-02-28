@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace PlayableLighting
 {
-    [BepInPlugin("com.kuborro.plugins.fp2.playablelighting", "Lighting", "1.0.0.1")]
+    [BepInPlugin("com.kuborro.plugins.fp2.playablelighting", "Lighting", "0.3.0.0")]
     [BepInDependency("000.kuborro.libraries.fp2.fp2lib")]
     public class PlayableLighting : BaseUnityPlugin
     {
@@ -47,20 +47,23 @@ namespace PlayableLighting
             VinylHandler.RegisterVinyl("kubo.m_theme_lighting", "Lighting's Theme", lightingTheme, VAddToShop.Fawnstar);
 
             //Add Badges
-            //BadgeHandler.RegisterBadge("kubo.lightingrunner", "Winged Runner", "Beat any stage's par time as Lighting.", dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Badges")[0], FPBadgeType.SILVER);
-            //BadgeHandler.RegisterBadge("kubo.lightingspeedrunner", "Winged Speedrunner", "Beat any stage as Lighting in less than half of the par time.", dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Badges")[1], FPBadgeType.SILVER);
-            //BadgeHandler.RegisterBadge("kubo.lightingmaster", "Winged Master", "Beat the par times in all stages as Lighting.", dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Badges")[2], FPBadgeType.GOLD);
-            //BadgeHandler.RegisterBadge("kubo.lightingcomplete", "Future Preserved", "Finish the game as Lighting.", dataBundle.LoadAssetWithSubAssets<Sprite>("Lighting_Badges")[3], FPBadgeType.GOLD);
+            BadgeHandler.RegisterBadge("kubo.lightingrunner", "Winged Runner", "Beat any stage's par time as Lighting.", null, FPBadgeType.SILVER);
+            BadgeHandler.RegisterBadge("kubo.lightingspeedrunner", "Winged Speedrunner", "Beat any stage as Lighting in less than half of the par time.", null, FPBadgeType.SILVER);
+            BadgeHandler.RegisterBadge("kubo.lightingmaster", "Winged Master", "Beat the par times in all stages as Lighting.", null, FPBadgeType.GOLD);
+            BadgeHandler.RegisterBadge("kubo.lightingcomplete", "Future Preserved", "Finish the game as Lighting.", null, FPBadgeType.GOLD);
 
             //Add Items
             Sprite stepBooster = dataBundle.LoadAsset<Sprite>("StepBooster");
             ItemHandler.RegisterItem("kubo.fast_ladders","Step Booster", stepBooster, "Lets you climb ladders faster!");
 
+            //Sprites
+            MenuPhotoPose menuPhotoPose = new MenuPhotoPose();
+
             //Load character select object
             PlayableChara lightingChar = new PlayableChara()
             {
-                uid = "com.kuborro.lighting",
                 Name = "Lighting",
+                uid = "com.kuborro.lighting",
                 TutorialScene = "Tutorial1",
                 characterType = "RANGED Type",
                 skill1 = "Fly",
@@ -93,7 +96,7 @@ namespace PlayableLighting
                 resultsTrack = lightingClear,
                 endingTrack = lightingTheme,
                 playerBoss = null,
-                menuPhotoPose = new MenuPhotoPose(),
+                menuPhotoPose = menuPhotoPose,
                 characterSelectPrefab = dataBundle.LoadAsset<GameObject>("Menu CS Character Lighting"),
                 menuInstructionPrefab = dataBundle.LoadAsset<GameObject>("MenuInstructionsLighting"),
                 prefab = dataBundle.LoadAsset<GameObject>("Player Lighting"),
@@ -112,11 +115,13 @@ namespace PlayableLighting
             Harmony harmony = new Harmony("com.kuborro.plugins.fp2.playablelighting");
             harmony.PatchAll(typeof(PatchAnimatorPreInitializer));
             harmony.PatchAll(typeof(PatchFPHudMaster));
+            harmony.PatchAll(typeof(PatchFPLadderTrigger));
             harmony.PatchAll(typeof(PatchFPPlayer));
             harmony.PatchAll(typeof(PatchFPResultsMenu));
             harmony.PatchAll(typeof(PatchFPSaveManager));
             harmony.PatchAll(typeof(PatchMenuClassic));
             harmony.PatchAll(typeof(PatchMenuWorldMap));
+            harmony.PatchAll(typeof(PatchFPEventSequence));
         }
     }
 }

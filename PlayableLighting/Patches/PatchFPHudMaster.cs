@@ -66,6 +66,12 @@ namespace PlayableLighting.Patches
                 return;
             }
 
+            //Maybe not replace the guide when in BFF2000 mode, or Airship sections.
+            if (player.displayMoveAttack == "Spark Shot" || player.displayMoveAttack.Contains("Missiles") || FPStage.stageNameString == "Bakunawa Chase")
+            {
+                return;
+            }
+
             string text = "Jump";
             string text2 = "Single Shot";
             string text3 = "<c=energy>Wing Special</c>";
