@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 using UnityEngine;
 
-namespace PlayableLighting.Patches
+namespace PlayableLightning.Patches
 {
     internal class PatchAnimatorPreInitializer
     {
@@ -9,8 +9,8 @@ namespace PlayableLighting.Patches
         [HarmonyPatch(typeof(AnimatorPreInitializer), "Start", MethodType.Normal)]
         static void PatchAnimatorPreInit(ref AnimatorInitializationParams[] ___animatorsToInit)
         {
-            AnimatorInitializationParams lightingInit = new AnimatorInitializationParams();
-            lightingInit.animator = PlayableLighting.dataBundle.LoadAsset<Animator>("Lighting Animator Player");
+            AnimatorInitializationParams lightningInit = new AnimatorInitializationParams();
+            lightningInit.animator = PlayableLightning.dataBundle.LoadAsset<Animator>("Lightning Animator Player");
 
             AnimatorInitializationClipParams[] clipsToInit = {
 
@@ -23,9 +23,9 @@ namespace PlayableLighting.Patches
                 new AnimatorInitializationClipParams("Pose1")
 
             };
-            lightingInit.animationClipsToPlay = clipsToInit;
+            lightningInit.animationClipsToPlay = clipsToInit;
 
-            ___animatorsToInit = ___animatorsToInit.AddToArray(lightingInit);
+            ___animatorsToInit = ___animatorsToInit.AddToArray(lightningInit);
         }
     }
 }

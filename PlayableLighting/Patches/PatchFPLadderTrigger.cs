@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace PlayableLighting.Patches
+namespace PlayableLightning.Patches
 {
     internal class PatchFPLadderTrigger
     {
@@ -12,7 +12,7 @@ namespace PlayableLighting.Patches
         [HarmonyPatch(typeof(FPLadderTrigger), "Update", MethodType.Normal)]
         static void PatchFPLadderTriggerUpdate(FPLadderTrigger __instance)
         {
-            if (FPSaveManager.character == PlayableLighting.currentLightingID)
+            if (FPSaveManager.character == PlayableLightning.currentLightningID)
             {
                 FPBaseObject fpbaseObject = null;
                 while (FPStage.ForEach(FPPlayer.classID, ref fpbaseObject))
@@ -22,7 +22,7 @@ namespace PlayableLighting.Patches
                     {
                         if (FPCollision.CheckAABB(__instance, __instance.ladderDimensions, fpbaseObject, fpplayer.hbTouch, false, false, false))
                         {
-                            if (fpplayer.state == new FPObjectState(PatchFPPlayer.State_Lighting_GravityBoots_P2) || fpplayer.state == new FPObjectState(PatchFPPlayer.State_Lighting_WingSmash_P2))
+                            if (fpplayer.state == new FPObjectState(PatchFPPlayer.State_Lightning_GravityBoots_P2) || fpplayer.state == new FPObjectState(PatchFPPlayer.State_Lightning_WingSmash_P2))
                             {
                                 if (fpplayer.input.up && fpplayer.position.y < __instance.position.y + __instance.ladderDimensions.top)
                                 {

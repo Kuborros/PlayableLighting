@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net35</TargetFramework>
-    <AssemblyName>PlayableLighting</AssemblyName>
-    <Product>Playable  Lighting</Product>
+    <AssemblyName>PlayableLightning</AssemblyName>
+    <Product>Playable  Lightning</Product>
     <Version>1.0.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
@@ -12,7 +12,7 @@
       https://nuget.bepinex.dev/v3/index.json;
       https://nuget.samboy.dev/v3/index.json
     </RestoreAdditionalProjectSources>
-    <RootNamespace>PlayableLighting</RootNamespace>
+    <RootNamespace>PlayableLightning</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

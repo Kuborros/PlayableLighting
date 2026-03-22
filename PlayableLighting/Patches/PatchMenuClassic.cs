@@ -1,7 +1,7 @@
 ﻿using FP2Lib.Badge;
 using HarmonyLib;
 
-namespace PlayableLighting.Patches
+namespace PlayableLightning.Patches
 {
     internal class PatchMenuClassic
     {
@@ -9,11 +9,11 @@ namespace PlayableLighting.Patches
         [HarmonyPatch(typeof(MenuClassic), "Update", MethodType.Normal)]
         private static void PatchStateDefault(float ___badgeCheckTimer)
         {
-            if (___badgeCheckTimer > 0f && ___badgeCheckTimer < 26f && FPSaveManager.character == PlayableLighting.currentLightingID)
+            if (___badgeCheckTimer > 0f && ___badgeCheckTimer < 26f && FPSaveManager.character == PlayableLightning.currentLightningID)
             {
                 if ((___badgeCheckTimer + FPStage.deltaTime) >= 25f)
                 {
-                    FPSaveManager.BadgeCheck(BadgeHandler.Badges["kubo.lightingmaster"].id);
+                    FPSaveManager.BadgeCheck(BadgeHandler.Badges["kubo.lightningmaster"].id);
                 }
             }
         }

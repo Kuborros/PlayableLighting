@@ -3,7 +3,7 @@ using System;
 using System.Reflection;
 using UnityEngine;
 
-namespace PlayableLighting.Patches
+namespace PlayableLightning.Patches
 {
     internal class PatchFPPlayer
     {
@@ -44,9 +44,9 @@ namespace PlayableLighting.Patches
         private static RuntimeAnimatorController fullChargeProjectile;
         private static RuntimeAnimatorController uberChargeProjectile;
 
-        internal static readonly MethodInfo m_AirMoves = SymbolExtensions.GetMethodInfo(() => Action_Lighting_AirMoves());
-        internal static readonly MethodInfo m_FuelPickup = SymbolExtensions.GetMethodInfo(() => Action_Lighting_FuelPickup());
-        internal static readonly MethodInfo m_GroundMoves = SymbolExtensions.GetMethodInfo(() => Action_Lighting_GroundMoves());
+        internal static readonly MethodInfo m_AirMoves = SymbolExtensions.GetMethodInfo(() => Action_Lightning_AirMoves());
+        internal static readonly MethodInfo m_FuelPickup = SymbolExtensions.GetMethodInfo(() => Action_Lightning_FuelPickup());
+        internal static readonly MethodInfo m_GroundMoves = SymbolExtensions.GetMethodInfo(() => Action_Lightning_GroundMoves());
 
         private static readonly FPHitBox bulletHitbox = new FPHitBox { left = -8, right = 8, top = 4, bottom = -4, enabled = true };
         private static readonly FPHitBox chargeBulletHitbox = new FPHitBox { left = -10, right = 10, top = 10, bottom = -10, enabled = true };
@@ -57,7 +57,7 @@ namespace PlayableLighting.Patches
         //Actions
 
 
-        internal static void Action_Lighting_GravityBoots(bool reduceCost)
+        internal static void Action_Lightning_GravityBoots(bool reduceCost)
         {
             if (flightAbilityUseCount >= 4 || flightAbilityCooldown > 0f) return;
 
@@ -71,10 +71,10 @@ namespace PlayableLighting.Patches
             }
             flightAbilityUseCount++;
             player.jumpAbilityFlag = true;
-            player.state = new FPObjectState(State_Lighting_GravityBoots_P1);
+            player.state = new FPObjectState(State_Lightning_GravityBoots_P1);
         }
 
-        internal static void Action_Lighting_WingSmash(bool reduceCost)
+        internal static void Action_Lightning_WingSmash(bool reduceCost)
         {
             if (flightAbilityUseCount >= 2 || flightAbilityCooldown > 0f) return;
 
@@ -88,10 +88,10 @@ namespace PlayableLighting.Patches
             }
             flightAbilityUseCount++;
             player.jumpAbilityFlag = true;
-            player.state = new FPObjectState(State_Lighting_WingSmash_P1);
+            player.state = new FPObjectState(State_Lightning_WingSmash_P1);
         }
 
-        internal static void Action_Lighting_NormalShotFire()
+        internal static void Action_Lightning_NormalShotFire()
         {
             float num = 8f;
             if (player.currentAnimation == "CrouchAttack_Loop")
@@ -144,7 +144,7 @@ namespace PlayableLighting.Patches
 
         }
 
-        internal static void Action_Lighting_ChargedShotFire(Vector3 chargeScale)
+        internal static void Action_Lightning_ChargedShotFire(Vector3 chargeScale)
         {
             float num = 8f;
             if (player.currentAnimation == "CrouchAttack_Loop")
@@ -215,12 +215,12 @@ namespace PlayableLighting.Patches
 
         }
 
-        internal static void Action_Lighting_FuelPickup()
+        internal static void Action_Lightning_FuelPickup()
         {
             player.hasSpecialItem = true;
         }
 
-        internal static void Action_Lighting_AirMoves()
+        internal static void Action_Lightning_AirMoves()
         {
             wingComboTimer -= FPStage.deltaTime;
             gravComboTimer -= FPStage.deltaTime;
@@ -259,7 +259,7 @@ namespace PlayableLighting.Patches
                 player.genericTimer = 0f;
                 shotDelay = 5f;
                 chargeShotDelay = 40f;
-                Action_Lighting_NormalShotFire();
+                Action_Lightning_NormalShotFire();
                 player.idleTimer = -player.fightStanceTime;
                 player.Action_StopSound();
             }
@@ -268,7 +268,7 @@ namespace PlayableLighting.Patches
                 player.SetPlayerAnimation("AirAttack", null, null, false, true);
                 shotDelay = 5f;
                 chargeShotDelay = 40f;
-                player.state = new FPObjectState(State_Lighting_AttackHold);
+                player.state = new FPObjectState(State_Lightning_AttackHold);
                 player.idleTimer = -player.fightStanceTime;
                 player.Action_StopSound();
             }
@@ -282,14 +282,14 @@ namespace PlayableLighting.Patches
             {
                 gravBootsComboStep = 2;
             }
-            else if (gravBootsComboStep == 2 && player.input.jumpPress && gravComboTimer > 0f && player.state != new FPObjectState(State_Lighting_WingSmash_P2) && player.state != new FPObjectState(State_Lighting_GravityBoots_P2))
+            else if (gravBootsComboStep == 2 && player.input.jumpPress && gravComboTimer > 0f && player.state != new FPObjectState(State_Lightning_WingSmash_P2) && player.state != new FPObjectState(State_Lightning_GravityBoots_P2))
             {
-                Action_Lighting_GravityBoots(true);
+                Action_Lightning_GravityBoots(true);
             }
             //Gravity Boots but without spamming buttons
-            else if ((player.input.up || player.input.down) && player.input.specialHold && player.state != new FPObjectState(State_Lighting_WingSmash_P2) && player.state != new FPObjectState(State_Lighting_GravityBoots_P2))
+            else if ((player.input.up || player.input.down) && player.input.specialHold && player.state != new FPObjectState(State_Lightning_WingSmash_P2) && player.state != new FPObjectState(State_Lightning_GravityBoots_P2))
             {
-                Action_Lighting_GravityBoots(false);
+                Action_Lightning_GravityBoots(false);
             }
             //Wing Smash combo trigger
             else if (wingSmashComboStep == 0 && player.input.specialHold && (player.input.left || player.input.right))
@@ -301,18 +301,18 @@ namespace PlayableLighting.Patches
             {
                 wingSmashComboStep = 2;
             }
-            else if (wingSmashComboStep == 2 && player.input.specialHold && (player.input.left || player.input.right) && wingComboTimer > 0f && player.state != new FPObjectState(State_Lighting_WingSmash_P2) && player.state != new FPObjectState(State_Lighting_GravityBoots_P2))
+            else if (wingSmashComboStep == 2 && player.input.specialHold && (player.input.left || player.input.right) && wingComboTimer > 0f && player.state != new FPObjectState(State_Lightning_WingSmash_P2) && player.state != new FPObjectState(State_Lightning_GravityBoots_P2))
             {
-                Action_Lighting_WingSmash(true);
+                Action_Lightning_WingSmash(true);
             }
             //Wing Smash but without spamming buttons
-            else if ((player.input.left || player.input.right) && player.input.specialHold && player.state != new FPObjectState(State_Lighting_WingSmash_P2) && player.state != new FPObjectState(State_Lighting_GravityBoots_P2))
+            else if ((player.input.left || player.input.right) && player.input.specialHold && player.state != new FPObjectState(State_Lightning_WingSmash_P2) && player.state != new FPObjectState(State_Lightning_GravityBoots_P2))
             {
-                Action_Lighting_WingSmash(false);
+                Action_Lightning_WingSmash(false);
             }
         }
 
-        internal static void Action_Lighting_GroundMoves()
+        internal static void Action_Lightning_GroundMoves()
         {
             wingComboTimer -= FPStage.deltaTime;
             gravComboTimer -= FPStage.deltaTime;
@@ -349,17 +349,17 @@ namespace PlayableLighting.Patches
                     player.genericTimer = 0f;
                     shotDelay = 5f;
                     chargeShotDelay = 40f;
-                    Action_Lighting_NormalShotFire();
+                    Action_Lightning_NormalShotFire();
                     player.idleTimer = -player.fightStanceTime;
                     player.Action_StopSound();
                 }
-                else if (player.state != new FPObjectState(State_Lighting_AttackHold))
+                else if (player.state != new FPObjectState(State_Lightning_AttackHold))
                 {
                     player.SetPlayerAnimation("AttackGround", null, null, false, true);
                     player.genericTimer = 0f;
                     shotDelay = 5f;
                     chargeShotDelay = 40f;
-                    Action_Lighting_NormalShotFire();
+                    Action_Lightning_NormalShotFire();
                     player.idleTimer = -player.fightStanceTime;
                     player.Action_StopSound();
                 }
@@ -372,17 +372,17 @@ namespace PlayableLighting.Patches
                     player.genericTimer = 0f;
                     shotDelay = 5f;
                     chargeShotDelay = 40f;
-                    player.state = new FPObjectState(State_Lighting_AttackHold);
+                    player.state = new FPObjectState(State_Lightning_AttackHold);
                     player.idleTimer = -player.fightStanceTime;
                     player.Action_StopSound();
                 }
-                else if (player.state != new FPObjectState(State_Lighting_AttackHold))
+                else if (player.state != new FPObjectState(State_Lightning_AttackHold))
                 {
                     player.SetPlayerAnimation("AttackGround", null, null, false, true);
                     player.genericTimer = 0f;
                     shotDelay = 5f;
                     chargeShotDelay = 50f;
-                    player.state = new FPObjectState(State_Lighting_AttackHold);
+                    player.state = new FPObjectState(State_Lightning_AttackHold);
                     player.idleTimer = -player.fightStanceTime;
                     player.Action_StopSound();
                 }
@@ -397,20 +397,20 @@ namespace PlayableLighting.Patches
             {
                 gravBootsComboStep = 2;
             }
-            else if (gravBootsComboStep == 2 && player.input.jumpPress && gravComboTimer > 0f && player.state != new FPObjectState(State_Lighting_WingSmash_P2) && player.state != new FPObjectState(State_Lighting_GravityBoots_P2))
+            else if (gravBootsComboStep == 2 && player.input.jumpPress && gravComboTimer > 0f && player.state != new FPObjectState(State_Lightning_WingSmash_P2) && player.state != new FPObjectState(State_Lightning_GravityBoots_P2))
             {
-                Action_Lighting_GravityBoots(true);
+                Action_Lightning_GravityBoots(true);
             }
             //Gravity Boots but without spamming buttons
             else if (player.input.up && player.input.specialHold)
             {
-                Action_Lighting_GravityBoots(false);
+                Action_Lightning_GravityBoots(false);
             }
         }
 
         //States
 
-        internal static void State_Lighting_GravityBoots_P1()
+        internal static void State_Lightning_GravityBoots_P1()
         {
             player.SetPlayerAnimation("Jumping");
 
@@ -459,11 +459,11 @@ namespace PlayableLighting.Patches
             else
             {
                 player.genericTimer = 0f;
-                player.state = new FPObjectState(State_Lighting_GravityBoots_P2);
+                player.state = new FPObjectState(State_Lightning_GravityBoots_P2);
             }
         }
 
-        internal static void State_Lighting_GravityBoots_P2()
+        internal static void State_Lightning_GravityBoots_P2()
         {
             player.genericTimer += FPStage.deltaTime;
             player.energyRecoverRate = 0f;
@@ -524,7 +524,7 @@ namespace PlayableLighting.Patches
             }
         }
 
-        internal static void State_Lighting_WingSmash_P1()
+        internal static void State_Lightning_WingSmash_P1()
         {
             player.SetPlayerAnimation("Jumping");
 
@@ -561,11 +561,11 @@ namespace PlayableLighting.Patches
             else
             {
                 player.genericTimer = 0f;
-                player.state = new FPObjectState(State_Lighting_WingSmash_P2);
+                player.state = new FPObjectState(State_Lightning_WingSmash_P2);
             }
         }
 
-        internal static void State_Lighting_WingSmash_P2()
+        internal static void State_Lightning_WingSmash_P2()
         {
             player.genericTimer += FPStage.deltaTime;
             player.energyRecoverRate = 0f;
@@ -632,7 +632,7 @@ namespace PlayableLighting.Patches
             }
         }
 
-        internal static void State_Lighting_AttackHold()
+        internal static void State_Lightning_AttackHold()
         {
             if (player.input.attackHold && player.energy > 0f)
             {
@@ -692,7 +692,7 @@ namespace PlayableLighting.Patches
                 player.energyRecoverRate = energyRecoveryBaseSpeed;
                 if (weaponCharge > 0f)
                 {
-                    Action_Lighting_ChargedShotFire(new Vector3(1,1,1));
+                    Action_Lightning_ChargedShotFire(new Vector3(1,1,1));
                 }
                 if (player.onGround)
                 {
@@ -809,7 +809,7 @@ namespace PlayableLighting.Patches
         [HarmonyPatch(typeof(FPPlayer), "Update", MethodType.Normal)]
         static void PatchPlayerUpdate(FPPlayer __instance, float ___speedMultiplier, float ___guardBuffer, float ___jumpMultiplier)
         {
-            if (FPSaveManager.character == PlayableLighting.currentLightingID)
+            if (FPSaveManager.character == PlayableLightning.currentLightningID)
             {
                 //Value Yeeter 10000
                 player = __instance;
@@ -837,7 +837,7 @@ namespace PlayableLighting.Patches
         [HarmonyPatch(typeof(FPPlayer), "Start", MethodType.Normal)]
         static void PatchPlayerStart(FPPlayer __instance)
         {
-            if (FPSaveManager.character == PlayableLighting.currentLightingID)
+            if (FPSaveManager.character == PlayableLightning.currentLightningID)
             {
                 player = __instance;
                 ResetStaticVars();
@@ -855,20 +855,20 @@ namespace PlayableLighting.Patches
                 }
 
                 //Load projectile animations
-                baseProjectile = PlayableLighting.dataBundle.LoadAsset<RuntimeAnimatorController>("BaseProjectile");
-                partChargeProjectile = PlayableLighting.dataBundle.LoadAsset<RuntimeAnimatorController>("PartChargeProjectile");
-                fullChargeProjectile = PlayableLighting.dataBundle.LoadAsset<RuntimeAnimatorController>("FullChargeProjectile");
-                uberChargeProjectile = PlayableLighting.dataBundle.LoadAsset<RuntimeAnimatorController>("UberChargeProjectile");
+                baseProjectile = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("BaseProjectile");
+                partChargeProjectile = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("PartChargeProjectile");
+                fullChargeProjectile = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("FullChargeProjectile");
+                uberChargeProjectile = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("UberChargeProjectile");
 
                 //Spooky
-                GameObject ghost = PlayableLighting.dataBundle.LoadAsset<GameObject>("Tyler Dash Ghost");
+                GameObject ghost = PlayableLightning.dataBundle.LoadAsset<GameObject>("Tyler Dash Ghost");
                 GameObject.Instantiate(ghost);
 
             }
 
             //Fast Ladders (truly the most OP item in MM8)
             //Works for all characters.
-            if (__instance.IsPowerupActive(PlayableLighting.fastLaddersID))
+            if (__instance.IsPowerupActive(PlayableLightning.fastLaddersID))
             {
                 __instance.climbingSpeed = 2 * __instance.climbingSpeed;
             }

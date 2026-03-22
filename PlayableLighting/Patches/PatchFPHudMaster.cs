@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 using UnityEngine;
 
-namespace PlayableLighting.Patches
+namespace PlayableLightning.Patches
 {
     internal class PatchFPHudMaster
     {
@@ -9,11 +9,11 @@ namespace PlayableLighting.Patches
         [HarmonyPatch(typeof(FPHudMaster), "Start", MethodType.Normal)]
         static void PatchFPHudMasterStart(ref GameObject ___pfHudBase, ref GameObject ___pfHudEnergyIcon, ref GameObject ___pfHudEnergyBar)
         {
-            if (FPSaveManager.character == PlayableLighting.currentLightingID)
+            if (FPSaveManager.character == PlayableLightning.currentLightningID)
             {
-                ___pfHudBase = PlayableLighting.dataBundle.LoadAsset<GameObject>("Hud Base Lighting");
-                ___pfHudEnergyIcon = PlayableLighting.dataBundle.LoadAsset<GameObject>("Hud Energy Icon Lighting");
-                ___pfHudEnergyBar = PlayableLighting.dataBundle.LoadAsset<GameObject>("Hud Energy Bar Lighting");
+                ___pfHudBase = PlayableLightning.dataBundle.LoadAsset<GameObject>("Hud Base Lightning");
+                ___pfHudEnergyIcon = PlayableLightning.dataBundle.LoadAsset<GameObject>("Hud Energy Icon Lightning");
+                ___pfHudEnergyBar = PlayableLightning.dataBundle.LoadAsset<GameObject>("Hud Energy Bar Lightning");
             }
         }
 
@@ -21,7 +21,7 @@ namespace PlayableLighting.Patches
         [HarmonyPatch(typeof(FPHudMaster), "Start", MethodType.Normal)]
         static void PatchFPHudMasterStartPost(FPPlayer ___targetPlayer, ref FPHudDigit[] ___hudLifePetals, ref FPHudDigit[] ___hudShields, ref FPHudDigit[] ___hudEnergy)
         {
-            if (___targetPlayer.characterID == PlayableLighting.currentLightingID)
+            if (___targetPlayer.characterID == PlayableLightning.currentLightningID)
             {
                 Vector3 posEnergy = ___hudEnergy[0].transform.position;
                 posEnergy.x = 6;
@@ -61,7 +61,7 @@ namespace PlayableLighting.Patches
         [HarmonyPatch(typeof(FPHudMaster), "GuideUpdate", MethodType.Normal)]
         static void PatchGuideUpdate(FPPlayer player, FPHudMaster __instance)
         {
-            if (player == null || player.characterID != PlayableLighting.currentLightingID)
+            if (player == null || player.characterID != PlayableLightning.currentLightningID)
             {
                 return;
             }
