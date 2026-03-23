@@ -54,10 +54,15 @@ namespace PlayableLightning
 
             //Add Items
             Sprite stepBooster = dataBundle.LoadAsset<Sprite>("StepBooster");
-            ItemHandler.RegisterItem("kubo.fast_ladders","Step Booster", stepBooster, "Lets you climb ladders faster!");
+            if (ItemHandler.RegisterItem("kubo.fast_ladders","Step Booster", stepBooster, "Lets you climb ladders faster!"))
+                fastLaddersID = (FPPowerup)ItemHandler.GetItemDataByUid("kubo.fast_ladders").itemID;
 
             //Sprites
-            MenuPhotoPose menuPhotoPose = new MenuPhotoPose();
+            MenuPhotoPose menuPhotoPose = new MenuPhotoPose {
+                airSprites = dataBundle.LoadAssetWithSubAssets<Sprite>("Lightning_CameraAir"),
+                groundSprites = dataBundle.LoadAssetWithSubAssets<Sprite>("Lightning_CameraGround")
+            };
+
 
             //Load character select object
             PlayableChara lightningChar = new PlayableChara()
@@ -96,8 +101,8 @@ namespace PlayableLightning
                 itemFuel = dataBundle.LoadAsset<Sprite>("Lightning_ItemFuel"),
                 worldMapPauseSprite = dataBundle.LoadAssetWithSubAssets<Sprite>("Lightning_VictoryLoop")[0],
                 zaoBaseballSprite = dataBundle.LoadAsset<Sprite>("Lightning_ZaoBall"),
-                bfImpaleSprite = dataBundle.LoadAsset<Sprite>("Lightning_KOFront"),
-                livesIconAnim = dataBundle.LoadAssetWithSubAssets<Sprite>("Lightning_HudIcon"),
+                bfImpaleSprite = dataBundle.LoadAsset<Sprite>("Lightning_BakuStab"),
+                livesIconAnim = dataBundle.LoadAssetWithSubAssets<Sprite>("Lightning_HudIconNew"),
                 sagaBlock = dataBundle.LoadAsset<RuntimeAnimatorController>("SagaLightning"),
                 sagaBlockSyntax = dataBundle.LoadAsset<RuntimeAnimatorController>("Saga2Lightning"),
                 resultsTrack = lightningClear,

@@ -22,22 +22,24 @@ namespace PlayableLightning.Patches
         private static float gravAngleX;
         private static float gravAngleY;
 
+        private static bool dashFlag;
+
         private static int flightAbilityUseCount = 0;
         private static float flightAbilityCooldown = 0f;
-
-        private static int wingSmashComboStep = 0;
-        private static int gravBootsComboStep = 0;
-        private static float wingComboTimer = 0f;
-        private static float gravComboTimer = 0f;
 
         private static float weaponCharge = 0f;
         private static float shotDelay = 10f;
         private static float chargeShotDelay = 50f;
+        private static int weaponChargeLevel = 0;
+
+        private static GameObject chargeFX;
 
         private static readonly float energyRecoveryBaseSpeed = 0.4f;
         private static readonly float baseProjectileDamage = 2f;
         private static readonly float baseChargeProjectileDamage = 2f;
         private static readonly float maxChargeProjectileDamage = 10f;
+
+        private static readonly float lightningDashVel = 24f;
 
         private static RuntimeAnimatorController baseProjectile;
         private static RuntimeAnimatorController partChargeProjectile;
@@ -57,7 +59,7 @@ namespace PlayableLightning.Patches
         //Actions
 
 
-        internal static void Action_Lightning_GravityBoots(bool reduceCost)
+        internal static void Action_Lightning_GravityBoots()
         {
             if (flightAbilityUseCount >= 4 || flightAbilityCooldown > 0f) return;
 
@@ -74,7 +76,7 @@ namespace PlayableLightning.Patches
             player.state = new FPObjectState(State_Lightning_GravityBoots_P1);
         }
 
-        internal static void Action_Lightning_WingSmash(bool reduceCost)
+        internal static void Action_Lightning_WingSmash()
         {
             if (flightAbilityUseCount >= 2 || flightAbilityCooldown > 0f) return;
 
@@ -93,22 +95,17 @@ namespace PlayableLightning.Patches
 
         internal static void Action_Lightning_NormalShotFire()
         {
-            float num = 8f;
-            if (player.currentAnimation == "CrouchAttack_Loop")
-            {
-                num = -8f;
-            }
             FPAudio.PlaySfx(basicShotSfx);
             ProjectileBasic basicShot;
             if (player.direction == FPDirection.FACING_LEFT)
             {
-                basicShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, player.position.x - Mathf.Cos(0.017453292f * player.angle) * 32f + Mathf.Sin(0.017453292f * player.angle) * num, player.position.y + Mathf.Cos(0.017453292f * player.angle) * num - Mathf.Sin(0.017453292f * player.angle) * 32f);
+                basicShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, chargeFX.transform.position.x, chargeFX.transform.position.y);
                 basicShot.velocity.x = Mathf.Cos(0.017453292f * player.angle) * -20f;
                 basicShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * -20f;
             }
             else
             {
-                basicShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, player.position.x + Mathf.Cos(0.017453292f * player.angle) * 32f + Mathf.Sin(0.017453292f * player.angle) * num, player.position.y + Mathf.Cos(0.017453292f * player.angle) * num + Mathf.Sin(0.017453292f * player.angle) * 32f);
+                basicShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, chargeFX.transform.position.x, chargeFX.transform.position.y);
                 basicShot.velocity.x = Mathf.Cos(0.017453292f * player.angle) * 20f;
                 basicShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * 20f;
             }
@@ -117,15 +114,12 @@ namespace PlayableLightning.Patches
             basicShot.animator.runtimeAnimatorController = basicShot.animatorController;
             basicShot.attackPower = baseProjectileDamage * player.GetAttackModifier();
             basicShot.direction = player.direction;
-            //Very dumb hack
-            if (player.direction == FPDirection.FACING_LEFT)
-                basicShot.direction = FPDirection.FACING_RIGHT;
-            else
-                basicShot.direction = FPDirection.FACING_LEFT;
             basicShot.angle = player.angle;
+            basicShot.scale = new Vector3(1, 1, 1);
             basicShot.damageElementType = -1;
             basicShot.explodeType = FPExplodeType.WHITEBURST;
             basicShot.ignoreTerrain = false;
+            basicShot.ignoreInvincibility = false;
             basicShot.explodeTimer = 50f;
             basicShot.terminalVelocity = 0f;
             basicShot.gravityStrength = 0;
@@ -144,33 +138,28 @@ namespace PlayableLightning.Patches
 
         }
 
-        internal static void Action_Lightning_ChargedShotFire(Vector3 chargeScale)
+        internal static void Action_Lightning_ChargedShotFire()
         {
-            float num = 8f;
-            if (player.currentAnimation == "CrouchAttack_Loop")
-            {
-                num = -8f;
-            }
             FPAudio.PlaySfx(chargeShotSfx);
             ProjectileBasic chargeShot;
             if (player.direction == FPDirection.FACING_LEFT)
             {
-                chargeShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, player.position.x - Mathf.Cos(0.017453292f * player.angle) * 32f + Mathf.Sin(0.017453292f * player.angle) * num, player.position.y + Mathf.Cos(0.017453292f * player.angle) * num - Mathf.Sin(0.017453292f * player.angle) * 32f);
+                chargeShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, chargeFX.transform.position.x, chargeFX.transform.position.y);
                 chargeShot.velocity.x = Mathf.Cos(0.017453292f * player.angle) * -20f;
                 chargeShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * -20f;
             }
             else
             {
-                chargeShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, player.position.x + Mathf.Cos(0.017453292f * player.angle) * 32f + Mathf.Sin(0.017453292f * player.angle) * num, player.position.y + Mathf.Cos(0.017453292f * player.angle) * num + Mathf.Sin(0.017453292f * player.angle) * 32f);
+                chargeShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, chargeFX.transform.position.x, chargeFX.transform.position.y);
                 chargeShot.velocity.x = Mathf.Cos(0.017453292f * player.angle) * 20f;
                 chargeShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * 20f;
             }
-
 
             if (weaponCharge > 90f)
             {
                 chargeShot.animatorController = fullChargeProjectile;
                 chargeShot.hbTouch = fullChargeBulletHitbox;
+                chargeShot.ignoreTerrain = true;
                 chargeShot.halfHeight = 14;
                 chargeShot.halfWidth = 30;
             }
@@ -178,21 +167,20 @@ namespace PlayableLightning.Patches
             {
                 chargeShot.animatorController = partChargeProjectile;
                 chargeShot.hbTouch = chargeBulletHitbox;
+                chargeShot.ignoreTerrain = false;
                 chargeShot.halfHeight = 10;
                 chargeShot.halfWidth = 10;
             }
             chargeShot.animator = chargeShot.GetComponent<Animator>();
             chargeShot.animator.runtimeAnimatorController = chargeShot.animatorController;
             chargeShot.attackPower = (baseChargeProjectileDamage + Math.Min(maxChargeProjectileDamage, weaponCharge/10)) * player.GetAttackModifier();
-            //Idiotic hack
-            if (player.direction == FPDirection.FACING_LEFT)
-                chargeShot.direction = FPDirection.FACING_RIGHT;
-            else
-                chargeShot.direction = FPDirection.FACING_LEFT;
+            chargeShot.direction = player.direction;
             chargeShot.angle = player.angle;
             chargeShot.damageElementType = 3;
             chargeShot.explodeType = FPExplodeType.EXPLOSION;
-            chargeShot.ignoreTerrain = false;
+			chargeShot.scale = new Vector3(1, 1, 1);
+            chargeShot.ignoreInvincibility = false;
+            chargeShot.destroyOnHit = false;
             chargeShot.explodeTimer = 50f;
             chargeShot.terminalVelocity = 0f;
             chargeShot.gravityStrength = 0;
@@ -217,17 +205,20 @@ namespace PlayableLightning.Patches
 
         internal static void Action_Lightning_FuelPickup()
         {
-            player.hasSpecialItem = true;
-        }
+			if (player.hasSpecialItem)
+			{
+				player.invincibilityTime = Mathf.Max(player.invincibilityTime, 240f);
+				player.flashTime = Mathf.Max(player.flashTime, 240f);
+				FPAudio.PlaySfx(16);
+			}
+			else
+			{
+				player.hasSpecialItem = true;
+			}
+		}
 
         internal static void Action_Lightning_AirMoves()
         {
-            wingComboTimer -= FPStage.deltaTime;
-            gravComboTimer -= FPStage.deltaTime;
-            if (wingComboTimer < 0f)
-                wingSmashComboStep = 0;
-            if (gravComboTimer < 0f)
-                gravBootsComboStep = 0;
 
             if (player.input.jumpPress && player.velocity.y < player.jumpStrength && !player.jumpAbilityFlag && player.targetWaterSurface == null)
             {
@@ -235,13 +226,29 @@ namespace PlayableLightning.Patches
                 flightAbilityUseCount++;
                 player.velocity.y = Mathf.Max(player.jumpStrength * jumpMultiplier, player.velocity.y);
                 player.state = new FPObjectState(player.State_InAir);
-                player.SetPlayerAnimation("DoubleJump", new float?(0f), new float?(0f), true, true);
+                player.SetPlayerAnimation("Spring", new float?(0f), new float?(0f), true, true);
                 player.genericTimer = 0f;
                 player.jumpReleaseFlag = true;
                 player.Action_PlaySoundUninterruptable(player.sfxDoubleJump);
                 WhiteBurst whiteBurst = (WhiteBurst)FPStage.CreateStageObject(WhiteBurst.classID, player.position.x, player.position.y - 24f);
                 whiteBurst.scale.x = 1.5f;
                 whiteBurst.scale.y = 0.3f;
+            }
+            else if (dashFlag && player.guardTime <= 20f && player.guardTime > 10f && player.input.guardHold)
+            {
+                dashFlag = false;
+                player.genericTimer = 0f;
+                if (player.direction == FPDirection.FACING_LEFT)
+                {
+                    player.velocity.x -= lightningDashVel;
+                }
+                else
+                {
+                   player.velocity.x += lightningDashVel;
+                }
+                player.velocity.y = 0f;
+                player.state = State_Lightning_Dash;
+                player.Action_PlaySoundUninterruptable(player.sfxLilacBlink);
             }
             else if ((player.guardTime <= 0f || player.cancellableGuard) && (player.input.guardPress || (guardBuffer > 0f && player.input.guardHold)))
             {
@@ -252,10 +259,11 @@ namespace PlayableLightning.Patches
                 player.Action_ShadowGuard();
                 GuardFlash guardFlash = (GuardFlash)FPStage.CreateStageObject(GuardFlash.classID, player.position.x, player.position.y);
                 guardFlash.parentObject = player;
+                dashFlag = true;
             }
             else if (player.input.attackPress && shotDelay < 0f)
             {
-                player.SetPlayerAnimation("AirAttack", null, null, false, true);
+                player.SetPlayerAnimation("Jumping_Loop", null, null, false, true);
                 player.genericTimer = 0f;
                 shotDelay = 5f;
                 chargeShotDelay = 40f;
@@ -265,64 +273,46 @@ namespace PlayableLightning.Patches
             }
             else if (player.input.attackHold && shotDelay < 0f && chargeShotDelay < 0f && player.energy > 20f)
             {
-                player.SetPlayerAnimation("AirAttack", null, null, false, true);
+                player.SetPlayerAnimation("Jumping_Loop", null, null, false, true);
                 shotDelay = 5f;
                 chargeShotDelay = 40f;
                 player.state = new FPObjectState(State_Lightning_AttackHold);
                 player.idleTimer = -player.fightStanceTime;
                 player.Action_StopSound();
             }
-            //Gravity Boots combo trigger
-            else if (gravBootsComboStep == 0 && player.input.down)
-            {
-                gravBootsComboStep = 1;
-                gravComboTimer = 30f;
-            }
-            else if (gravBootsComboStep == 1 && player.input.up && gravComboTimer > 0f)
-            {
-                gravBootsComboStep = 2;
-            }
-            else if (gravBootsComboStep == 2 && player.input.jumpPress && gravComboTimer > 0f && player.state != new FPObjectState(State_Lightning_WingSmash_P2) && player.state != new FPObjectState(State_Lightning_GravityBoots_P2))
-            {
-                Action_Lightning_GravityBoots(true);
-            }
-            //Gravity Boots but without spamming buttons
+            //Gravity Boots
             else if ((player.input.up || player.input.down) && player.input.specialHold && player.state != new FPObjectState(State_Lightning_WingSmash_P2) && player.state != new FPObjectState(State_Lightning_GravityBoots_P2))
             {
-                Action_Lightning_GravityBoots(false);
+                Action_Lightning_GravityBoots();
             }
-            //Wing Smash combo trigger
-            else if (wingSmashComboStep == 0 && player.input.specialHold && (player.input.left || player.input.right))
-            {
-                wingSmashComboStep = 1;
-                wingComboTimer = 20f;
-            }
-            else if (wingSmashComboStep == 1 && player.input.specialHold && !(player.input.left || player.input.right) && wingComboTimer > 0f)
-            {
-                wingSmashComboStep = 2;
-            }
-            else if (wingSmashComboStep == 2 && player.input.specialHold && (player.input.left || player.input.right) && wingComboTimer > 0f && player.state != new FPObjectState(State_Lightning_WingSmash_P2) && player.state != new FPObjectState(State_Lightning_GravityBoots_P2))
-            {
-                Action_Lightning_WingSmash(true);
-            }
-            //Wing Smash but without spamming buttons
+            //Wing Smash
             else if ((player.input.left || player.input.right) && player.input.specialHold && player.state != new FPObjectState(State_Lightning_WingSmash_P2) && player.state != new FPObjectState(State_Lightning_GravityBoots_P2))
             {
-                Action_Lightning_WingSmash(false);
+                Action_Lightning_WingSmash();
             }
         }
 
         internal static void Action_Lightning_GroundMoves()
         {
-            wingComboTimer -= FPStage.deltaTime;
-            gravComboTimer -= FPStage.deltaTime;
-            if (wingComboTimer < 0f)
-                wingSmashComboStep = 0;
-            if (gravComboTimer < 0f)
-                gravBootsComboStep = 0;
 
             //Guard
-            if ((player.guardTime <= 0f || player.cancellableGuard) && (player.input.guardPress || (guardBuffer > 0f && player.input.guardHold)))
+            if (dashFlag && player.guardTime <= 20f && player.guardTime > 10f && player.input.guardHold)
+            {
+                dashFlag = false;
+                player.genericTimer = 0f;
+                player.guardTime = 30f;
+                if (player.direction == FPDirection.FACING_LEFT)
+                {
+                    player.groundVel -= lightningDashVel;
+                }
+                else
+                {
+                    player.groundVel += lightningDashVel;
+                }
+                player.state = State_Lightning_Dash;
+                player.Action_PlaySoundUninterruptable(player.sfxLilacBlink);
+            }
+            else if ((player.guardTime <= 0f || player.cancellableGuard) && (player.input.guardPress || (guardBuffer > 0f && player.input.guardHold)))
             {
                 if (Mathf.Abs(player.groundVel) < 3f)
                 {
@@ -387,24 +377,9 @@ namespace PlayableLightning.Patches
                     player.Action_StopSound();
                 }
             }
-            //Gravity Boots combo trigger
-            else if (gravBootsComboStep == 0 && player.state == new FPObjectState(player.State_Crouching))
-            {
-                gravBootsComboStep = 1;
-                gravComboTimer = 30f;
-            }
-            else if (gravBootsComboStep == 1 && player.input.up && gravComboTimer > 0f)
-            {
-                gravBootsComboStep = 2;
-            }
-            else if (gravBootsComboStep == 2 && player.input.jumpPress && gravComboTimer > 0f && player.state != new FPObjectState(State_Lightning_WingSmash_P2) && player.state != new FPObjectState(State_Lightning_GravityBoots_P2))
-            {
-                Action_Lightning_GravityBoots(true);
-            }
-            //Gravity Boots but without spamming buttons
             else if (player.input.up && player.input.specialHold)
             {
-                Action_Lightning_GravityBoots(false);
+                Action_Lightning_GravityBoots();
             }
         }
 
@@ -412,7 +387,7 @@ namespace PlayableLightning.Patches
 
         internal static void State_Lightning_GravityBoots_P1()
         {
-            player.SetPlayerAnimation("Jumping");
+            player.SetPlayerAnimation("MoonJump");
 
             if (player.input.left)
                 gravAngleX = -5f;
@@ -426,7 +401,14 @@ namespace PlayableLightning.Patches
             else if (player.input.up)
                 gravAngleY = 10f;
 
-            if (player.genericTimer <= 10f)
+            if (player.input.left && player.input.up)
+                player.angle = 210f;
+            else if (player.input.right && player.input.up)
+                player.angle = 150f;
+            else if (player.input.up)
+                player.angle = 180f;
+
+            if (player.genericTimer <= 30f)
             {
                 player.genericTimer += FPStage.deltaTime;
                 player.velocity.x = 0f;
@@ -459,6 +441,7 @@ namespace PlayableLightning.Patches
             else
             {
                 player.genericTimer = 0f;
+                player.SetPlayerAnimation("MoonJump_Loop");
                 player.state = new FPObjectState(State_Lightning_GravityBoots_P2);
             }
         }
@@ -467,7 +450,6 @@ namespace PlayableLightning.Patches
         {
             player.genericTimer += FPStage.deltaTime;
             player.energyRecoverRate = 0f;
-            player.SetPlayerAnimation("Jumping");
             player.superArmor = true;
             player.invincibilityTime = Mathf.Max(player.invincibilityTime, 50f);
             ghostTimer += FPStage.deltaTime;
@@ -479,36 +461,16 @@ namespace PlayableLightning.Patches
 
             if (ghostTimer >= 0.5f)
             {
-                //player.Ghost();
                 Ghost();
                 ghostTimer = 0f;
             }
-            player.Process360Movement();
-
-            //Hit ceiling or wall when still holding special
-            if ((player.colliderRoof != null || player.colliderWall != null) && (player.input.specialHold || player.input.jumpHold) && player.energy >= 0f)
-            {
-                player.velocity.x = 0f;
-                player.velocity.y = 0f;
-                if (player.colliderRoof != null)
-                {
-                    player.angle = player.ceilingAngle;
-                }
-                else
-                {
-                    player.angle = player.groundAngle;
-                }
-                player.energy -= 1f * FPStage.deltaTime;
-            }
-            //'Ground' landing + Timeouts
-            else if (player.onGround || player.onGrindRail || (!player.input.specialHold && !player.input.jumpHold) || player.genericTimer >= 50f || player.energy <= 0f)
+            if (player.onGround || player.onGrindRail || player.colliderWall != null || player.colliderRoof != null || (!player.input.specialHold && !player.input.jumpHold) || player.genericTimer >= 50f || player.energy <= 0f)
             {
                 player.energyRecoverRate = energyRecoveryBaseSpeed;
                 player.hbAttack.enabled = false;
                 player.superArmor = false;
                 if (player.onGround)
                 {
-                    player.SetPlayerAnimation("Crouching", null, null, false, true);
                     player.state = new FPObjectState(player.State_Ground);
                 }
                 else
@@ -522,13 +484,14 @@ namespace PlayableLightning.Patches
             {
                 player.energy -= 2f * FPStage.deltaTime;
             }
+            player.Process360Movement();
         }
 
         internal static void State_Lightning_WingSmash_P1()
         {
-            player.SetPlayerAnimation("Jumping");
+            player.SetPlayerAnimation("WingSmash");
 
-            if (player.genericTimer <= 5f)
+            if (player.genericTimer <= 30f)
             {
                 player.genericTimer += FPStage.deltaTime;
                 player.velocity.x = 0f;
@@ -569,7 +532,7 @@ namespace PlayableLightning.Patches
         {
             player.genericTimer += FPStage.deltaTime;
             player.energyRecoverRate = 0f;
-            player.SetPlayerAnimation("Jumping");
+            player.SetPlayerAnimation("WingSmash_Loop");
             player.superArmor = true;
             player.invincibilityTime = Mathf.Max(player.invincibilityTime, 50f);
             ghostTimer += FPStage.deltaTime;
@@ -620,12 +583,11 @@ namespace PlayableLightning.Patches
                 player.superArmor = false;
                 if (player.onGround)
                 {
-                    player.SetPlayerAnimation("Landing", null, null, false, true);
                     player.state = new FPObjectState(player.State_Ground);
                 }
                 else
                 {
-                    player.SetPlayerAnimation("Jumping", 0.25f, 0.25f, false, true);
+                    player.SetPlayerAnimation("Jumping_Loop", 0.25f, 0.25f, false, true);
                     player.state = new FPObjectState(player.State_InAir);
                 }
                 player.attackStats = new FPObjectState(AttackStats_Idle);
@@ -644,27 +606,52 @@ namespace PlayableLightning.Patches
                 weaponCharge += 1f * FPStage.deltaTime;
                 player.energy -= 1f * FPStage.deltaTime;
 
+                chargeFX.gameObject.SetActive(true);
+                if (weaponCharge < 20f && weaponChargeLevel == 0)
+                {
+                    chargeFX.GetComponent<Animator>().Play("Charge1_Intro");
+                    weaponChargeLevel++;
+                }
+                else if (weaponCharge >= 20f && weaponChargeLevel == 1)
+                {
+                    chargeFX.GetComponent<Animator>().Play("Charge2_Intro");
+                    weaponChargeLevel++;
+                }
+                else if (weaponCharge >= 90f && weaponChargeLevel == 2)
+                {
+                    chargeFX.GetComponent<Animator>().Play("Charge3_Intro");
+                    weaponChargeLevel++;
+                }
+
                 if (player.onGround)
                 {
                     if (player.input.jumpPress)
                     {
                         player.genericTimer = 0f;
                         player.Action_SoftJump();
-                    }
-                    else if (player.onGrindRail)
-                    {
-                        player.PseudoGrindRail();
+                        player.SetPlayerAnimation("Jumping_Loop");
                     }
                     else
                     {
                         ApplyGroundForces(player, false);
+                        if (player.velocity == Vector2.zero)
+                            player.SetPlayerAnimation("GroundCharge");
+                        else
+                            player.SetPlayerAnimation("RunningShot");
                         player.angle = player.groundAngle;
                     }
                     player.jumpAbilityFlag = false;
                 }
+                else if (player.onGrindRail)
+                {
+                    player.PseudoGrindRail();
+                    player.SetPlayerAnimation("GrindCharge");
+                    player.jumpAbilityFlag = false;
+                }
                 else
                 {
-                    ApplyAirForces(player, false);
+					player.SetPlayerAnimation("Jumping_Loop");
+					ApplyAirForces(player, false);
                     ApplyGravityForce(player);
                     RotatePlayerUpright(player);
                     if (!player.input.jumpHold && player.jumpReleaseFlag)
@@ -689,10 +676,11 @@ namespace PlayableLightning.Patches
             else
             {
                 StopSFXLooping();
+                chargeFX.gameObject.SetActive(false);
                 player.energyRecoverRate = energyRecoveryBaseSpeed;
                 if (weaponCharge > 0f)
                 {
-                    Action_Lightning_ChargedShotFire(new Vector3(1,1,1));
+                    Action_Lightning_ChargedShotFire();
                 }
                 if (player.onGround)
                 {
@@ -700,9 +688,43 @@ namespace PlayableLightning.Patches
                 }
                 else
                 {
-                    player.SetPlayerAnimation("Jumping", 0.25f, 0.25f, false, true);
+                    player.SetPlayerAnimation("Jumping_Loop", 0.25f, 0.25f, false, true);
                     player.state = new FPObjectState(player.State_InAir);
                 }
+            }
+        }
+
+        internal static void State_Lightning_Dash()
+        {
+            player.SetPlayerAnimation("Dash");
+            player.genericTimer += FPStage.deltaTime;
+            player.superArmor = true;
+            if (player.genericTimer >= 5f || player.colliderWall != null)
+            {
+                player.genericTimer = 0f;
+                if (player.onGround)
+                {
+                    player.state = player.State_Ground;
+                }
+                else
+                {
+                    player.SetPlayerAnimation("Jumping_Loop");
+                    player.state = player.State_InAir;
+                }
+                player.Action_StopBlink();
+            }
+            else
+            {
+                if (player.onGround)
+                {
+                    FPCommon.GetCleanSinCos(player.groundAngle + ((player.direction != FPDirection.FACING_LEFT) ? 0f : (-180f)) * ((float)Math.PI / 180f), out var sin, out var cos);
+                    FPCamera.stageCamera.AddSlack(lightningDashVel * cos, lightningDashVel * sin);
+                }
+                else
+                {
+                    FPCamera.stageCamera.AddSlack(lightningDashVel * player.velocity.normalized.x, lightningDashVel * player.velocity.normalized.y);
+                }
+                player.attackStats = AttackStats_Blink;
             }
         }
 
@@ -745,6 +767,21 @@ namespace PlayableLightning.Patches
             player.attackEnemyInvTime = 5f / player.animator.speed;
             player.attackKnockback.x = 0f;
             player.attackKnockback.y = 0f;
+            player.attackSfx = 5;
+            player.attackPower *= player.GetAttackModifier();
+        }
+
+        private static void AttackStats_Blink()
+        {
+            player.attackPower = 8f;
+            player.attackHitstun = 0f;
+            player.attackEnemyInvTime = 10f;
+            player.attackKnockback.x = Mathf.Max(Mathf.Abs(player.prevVelocity.x * 0.375f), 4.5f);
+            if (player.direction == FPDirection.FACING_LEFT)
+            {
+                player.attackKnockback.x = 0f - player.attackKnockback.x;
+            }
+            player.attackKnockback.y = player.prevVelocity.y * 0.5f;
             player.attackSfx = 5;
             player.attackPower *= player.GetAttackModifier();
         }
@@ -796,12 +833,9 @@ namespace PlayableLightning.Patches
             flightAbilityUseCount = 0;
             flightAbilityCooldown = 0f;
 
-            wingSmashComboStep = 0;
-            gravBootsComboStep = 0;
-            wingComboTimer = 0f;
-            gravComboTimer = 0f;
-
+            weaponChargeLevel = 0;
             weaponCharge = 0f;
+            dashFlag = false;
         }
 
         //Postfixes
@@ -831,6 +865,13 @@ namespace PlayableLightning.Patches
             flightAbilityCooldown -= FPStage.deltaTime;
             shotDelay -= FPStage.deltaTime;
             chargeShotDelay -= FPStage.deltaTime;
+
+            if (__instance.state != new FPObjectState(State_Lightning_AttackHold))
+            {
+                chargeFX.gameObject.SetActive(false);
+                weaponChargeLevel = 0;
+                weaponCharge = 0f;
+            }
         }
 
         [HarmonyPostfix]
@@ -861,9 +902,10 @@ namespace PlayableLightning.Patches
                 uberChargeProjectile = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("UberChargeProjectile");
 
                 //Spooky
-                GameObject ghost = PlayableLightning.dataBundle.LoadAsset<GameObject>("Tyler Dash Ghost");
+                GameObject ghost = PlayableLightning.dataBundle.LoadAsset<GameObject>("DashGhost");
                 GameObject.Instantiate(ghost);
 
+                chargeFX = player.gameObject.transform.GetChild(1).gameObject;
             }
 
             //Fast Ladders (truly the most OP item in MM8)
