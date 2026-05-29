@@ -173,12 +173,13 @@ namespace PlayableLightning.Patches
             }
             chargeShot.animator = chargeShot.GetComponent<Animator>();
             chargeShot.animator.runtimeAnimatorController = chargeShot.animatorController;
-            chargeShot.attackPower = (baseChargeProjectileDamage + Math.Min(maxChargeProjectileDamage, weaponCharge/10)) * player.GetAttackModifier();
+            chargeShot.attackPower = (baseChargeProjectileDamage + Math.Min(maxChargeProjectileDamage, weaponCharge / 10)) * player.GetAttackModifier();
             chargeShot.direction = player.direction;
             chargeShot.angle = player.angle;
             chargeShot.damageElementType = 3;
-            chargeShot.explodeType = FPExplodeType.EXPLOSION;
-			chargeShot.scale = new Vector3(1, 1, 1);
+            chargeShot.explodeType = FPExplodeType.NONE;
+            chargeShot.onExplodeAction = ChargedShotExplosion;
+            chargeShot.scale = new Vector3(1, 1, 1);
             chargeShot.ignoreInvincibility = false;
             chargeShot.destroyOnHit = false;
             chargeShot.explodeTimer = 50f;
@@ -205,17 +206,17 @@ namespace PlayableLightning.Patches
 
         internal static void Action_Lightning_FuelPickup()
         {
-			if (player.hasSpecialItem)
-			{
-				player.invincibilityTime = Mathf.Max(player.invincibilityTime, 240f);
-				player.flashTime = Mathf.Max(player.flashTime, 240f);
-				FPAudio.PlaySfx(16);
-			}
-			else
-			{
-				player.hasSpecialItem = true;
-			}
-		}
+            if (player.hasSpecialItem)
+            {
+                player.invincibilityTime = Mathf.Max(player.invincibilityTime, 240f);
+                player.flashTime = Mathf.Max(player.flashTime, 240f);
+                FPAudio.PlaySfx(16);
+            }
+            else
+            {
+                player.hasSpecialItem = true;
+            }
+        }
 
         internal static void Action_Lightning_AirMoves()
         {
@@ -236,19 +237,23 @@ namespace PlayableLightning.Patches
             }
             else if (dashFlag && player.guardTime <= 20f && player.guardTime > 10f && player.input.guardHold)
             {
-                dashFlag = false;
-                player.genericTimer = 0f;
-                if (player.direction == FPDirection.FACING_LEFT)
+                //Air Dash
+                if (player.direction == FPDirection.FACING_RIGHT)
                 {
-                    player.velocity.x -= lightningDashVel;
+                    player.velocity.x = Mathf.Max(Mathf.Min(player.velocity.x + lightningDashVel, 18f), player.velocity.x);
+                    dashFlag = false;
+                    player.genericTimer = 0;
+                    ghostTimer = 0;
+                    player.state = new FPObjectState(State_Lightning_Dash);
                 }
                 else
                 {
-                   player.velocity.x += lightningDashVel;
+                    player.velocity.x = Mathf.Min(Mathf.Max(player.velocity.x - lightningDashVel, -18f), player.velocity.x);
+                    dashFlag = false;
+                    player.genericTimer = 0;
+                    ghostTimer = 0;
+                    player.state = new FPObjectState(State_Lightning_Dash);
                 }
-                player.velocity.y = 0f;
-                player.state = State_Lightning_Dash;
-                player.Action_PlaySoundUninterruptable(player.sfxLilacBlink);
             }
             else if ((player.guardTime <= 0f || player.cancellableGuard) && (player.input.guardPress || (guardBuffer > 0f && player.input.guardHold)))
             {
@@ -650,8 +655,8 @@ namespace PlayableLightning.Patches
                 }
                 else
                 {
-					player.SetPlayerAnimation("Jumping_Loop");
-					ApplyAirForces(player, false);
+                    player.SetPlayerAnimation("Jumping_Loop");
+                    ApplyAirForces(player, false);
                     ApplyGravityForce(player);
                     RotatePlayerUpright(player);
                     if (!player.input.jumpHold && player.jumpReleaseFlag)
@@ -672,7 +677,7 @@ namespace PlayableLightning.Patches
                         }
                     }
                 }
-            } 
+            }
             else
             {
                 StopSFXLooping();
@@ -694,39 +699,67 @@ namespace PlayableLightning.Patches
             }
         }
 
+        private static void State_Lightning_AirDash()
+        {
+            player.SetPlayerAnimation("AirDash");
+            player.genericTimer += FPStage.deltaTime;
+            player.superArmor = true;
+            ghostTimer += FPStage.deltaTime;
+            player.attackStats = new FPObjectState(AttackStats_Blink);
+
+            if (ghostTimer >= 2f)
+            {
+                Ghost();
+                ghostTimer = 0f;
+            }
+
+            if (player.genericTimer >= 15f)
+            {
+                player.genericTimer = 0f;
+                player.hbAttack.enabled = false;
+                player.superArmor = false;
+                if (player.onGround)
+                {
+                    player.state = new FPObjectState(player.State_Ground);
+                }
+                else
+                {
+                    if (player.targetWaterSurface == null) player.SetPlayerAnimation("Jumping_Loop");
+                    else player.SetPlayerAnimation("Swimming");
+
+                    player.state = new FPObjectState(player.State_InAir);
+                }
+                return;
+            }
+        }
+
+        /*
         internal static void State_Lightning_Dash()
         {
             player.SetPlayerAnimation("Dash");
             player.genericTimer += FPStage.deltaTime;
             player.superArmor = true;
-            if (player.genericTimer >= 5f || player.colliderWall != null)
+
+            if (player.genericTimer >= 15f)
             {
                 player.genericTimer = 0f;
+                player.hbAttack.enabled = false;
+                player.superArmor = false;
                 if (player.onGround)
                 {
-                    player.state = player.State_Ground;
+                    player.state = new FPObjectState(player.State_Ground);
                 }
                 else
                 {
-                    player.SetPlayerAnimation("Jumping_Loop");
-                    player.state = player.State_InAir;
+                    if (player.targetWaterSurface == null) player.SetPlayerAnimation("Jumping_Loop");
+                    else player.SetPlayerAnimation("Swimming");
+
+                    player.state = new FPObjectState(player.State_InAir);
                 }
-                player.Action_StopBlink();
-            }
-            else
-            {
-                if (player.onGround)
-                {
-                    FPCommon.GetCleanSinCos(player.groundAngle + ((player.direction != FPDirection.FACING_LEFT) ? 0f : (-180f)) * ((float)Math.PI / 180f), out var sin, out var cos);
-                    FPCamera.stageCamera.AddSlack(lightningDashVel * cos, lightningDashVel * sin);
-                }
-                else
-                {
-                    FPCamera.stageCamera.AddSlack(lightningDashVel * player.velocity.normalized.x, lightningDashVel * player.velocity.normalized.y);
-                }
-                player.attackStats = AttackStats_Blink;
+                return;
             }
         }
+        */
 
         //AttackStats
 
@@ -802,6 +835,27 @@ namespace PlayableLightning.Patches
             }
         }
 
+        private static void ChargedShotExplosion(ProjectileBasic projectile)
+        {
+            //Normal charge
+            if (projectile.halfHeight == 10)
+            {
+                //Temp
+                FPStage.CreateStageObject(WhiteBurst.classID, projectile.position.x, projectile.position.y);
+            }
+            //Full charge
+            else if (projectile.halfHeight == 14)
+            {
+                FPStage.CreateStageObject(Explosion.classID, projectile.position.x, projectile.position.y);
+            }
+            //Ubercharge
+            else if (projectile.halfHeight == 20)
+            {
+                FPStage.CreateStageObject(BigExplosion.classID, projectile.position.x, projectile.position.y);
+                FPAudio.PlaySfx(projectile.sfxExplode);
+            }
+        }
+
         private static void StopSFXLooping()
         {
             player.audioChannel[4].Stop();
@@ -862,15 +916,19 @@ namespace PlayableLightning.Patches
         [HarmonyPatch(typeof(FPPlayer), "LateUpdate", MethodType.Normal)]
         static void PatchLateUpdate(FPPlayer __instance)
         {
-            flightAbilityCooldown -= FPStage.deltaTime;
-            shotDelay -= FPStage.deltaTime;
-            chargeShotDelay -= FPStage.deltaTime;
-
-            if (__instance.state != new FPObjectState(State_Lightning_AttackHold))
+            if (FPSaveManager.character == PlayableLightning.currentLightningID)
             {
-                chargeFX.gameObject.SetActive(false);
-                weaponChargeLevel = 0;
-                weaponCharge = 0f;
+
+                flightAbilityCooldown -= FPStage.deltaTime;
+                shotDelay -= FPStage.deltaTime;
+                chargeShotDelay -= FPStage.deltaTime;
+
+                if (__instance.state != new FPObjectState(State_Lightning_AttackHold))
+                {
+                    chargeFX.gameObject.SetActive(false);
+                    weaponChargeLevel = 0;
+                    weaponCharge = 0f;
+                }
             }
         }
 
