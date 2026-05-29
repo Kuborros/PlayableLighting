@@ -699,7 +699,7 @@ namespace PlayableLightning.Patches
             }
         }
 
-        private static void State_Lightning_AirDash()
+        private static void State_Lightning_Dash()
         {
             player.SetPlayerAnimation("AirDash");
             player.genericTimer += FPStage.deltaTime;
