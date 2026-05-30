@@ -100,14 +100,14 @@ namespace PlayableLightning.Patches
             if (player.direction == FPDirection.FACING_LEFT)
             {
                 basicShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, chargeFX.transform.position.x, chargeFX.transform.position.y);
-                basicShot.velocity.x = Mathf.Cos(0.017453292f * player.angle) * -20f;
-                basicShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * -20f;
+                basicShot.velocity.x = Mathf.Cos(0.017453292f * player.angle) * -15f;
+                basicShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * -15f;
             }
             else
             {
                 basicShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, chargeFX.transform.position.x, chargeFX.transform.position.y);
-                basicShot.velocity.x = Mathf.Cos(0.017453292f * player.angle) * 20f;
-                basicShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * 20f;
+                basicShot.velocity.x = Mathf.Cos(0.017453292f * player.angle) * 15f;
+                basicShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * 15f;
             }
             basicShot.animatorController = baseProjectile;
             basicShot.animator = basicShot.GetComponent<Animator>();
@@ -128,8 +128,8 @@ namespace PlayableLightning.Patches
             basicShot.faction = player.faction;
             basicShot.timeBeforeCollisions = 0f;
             basicShot.hbTouch = bulletHitbox;
-            basicShot.halfHeight = 4;
-            basicShot.halfWidth = 8;
+            basicShot.halfHeight = 3;
+            basicShot.halfWidth = 6;
 
             if (player.IsPowerupActive(FPPowerup.SHADOW_GUARD))
             {
@@ -145,14 +145,14 @@ namespace PlayableLightning.Patches
             if (player.direction == FPDirection.FACING_LEFT)
             {
                 chargeShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, chargeFX.transform.position.x, chargeFX.transform.position.y);
-                chargeShot.velocity.x = Mathf.Cos(0.017453292f * player.angle) * -20f;
-                chargeShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * -20f;
+                chargeShot.velocity.x = Mathf.Cos(0.017453292f * player.angle) * -10f;
+                chargeShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * -10f;
             }
             else
             {
                 chargeShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, chargeFX.transform.position.x, chargeFX.transform.position.y);
-                chargeShot.velocity.x = Mathf.Cos(0.017453292f * player.angle) * 20f;
-                chargeShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * 20f;
+                chargeShot.velocity.x = Mathf.Cos(0.017453292f * player.angle) * 10f;
+                chargeShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * 10f;
             }
 
             if (weaponCharge > 90f)
@@ -160,15 +160,15 @@ namespace PlayableLightning.Patches
                 chargeShot.animatorController = fullChargeProjectile;
                 chargeShot.hbTouch = fullChargeBulletHitbox;
                 chargeShot.ignoreTerrain = true;
-                chargeShot.halfHeight = 14;
-                chargeShot.halfWidth = 30;
+                chargeShot.halfHeight = 10;
+                chargeShot.halfWidth = 12;
             }
             else
             {
                 chargeShot.animatorController = partChargeProjectile;
                 chargeShot.hbTouch = chargeBulletHitbox;
                 chargeShot.ignoreTerrain = false;
-                chargeShot.halfHeight = 10;
+                chargeShot.halfHeight = 8;
                 chargeShot.halfWidth = 10;
             }
             chargeShot.animator = chargeShot.GetComponent<Animator>();
@@ -190,6 +190,7 @@ namespace PlayableLightning.Patches
             chargeShot.faction = player.faction;
             chargeShot.timeBeforeCollisions = 0f;
 
+            /* Comissioner did not provide sprites for this feature despite being asked.
             if (player.hasSpecialItem && weaponCharge > 90f)
             {
                 chargeShot.animatorController = uberChargeProjectile;
@@ -199,6 +200,7 @@ namespace PlayableLightning.Patches
 
                 chargeShot.attackPower *= 2;
             }
+            */
 
             weaponCharge = 0f;
 
@@ -235,7 +237,7 @@ namespace PlayableLightning.Patches
                 whiteBurst.scale.x = 1.5f;
                 whiteBurst.scale.y = 0.3f;
             }
-            else if (dashFlag && player.guardTime <= 20f && player.guardTime > 10f && player.input.guardHold)
+            else if (dashFlag && player.guardTime <= 20f && player.guardTime > 5f && player.input.guardHold)
             {
                 //Air Dash
                 if (player.direction == FPDirection.FACING_RIGHT)
@@ -316,7 +318,7 @@ namespace PlayableLightning.Patches
                 }
                 player.state = State_Lightning_Dash;
                 player.Action_PlaySoundUninterruptable(player.sfxLilacBlink);
-            }
+            }      
             else if ((player.guardTime <= 0f || player.cancellableGuard) && (player.input.guardPress || (guardBuffer > 0f && player.input.guardHold)))
             {
                 if (Mathf.Abs(player.groundVel) < 3f)
@@ -335,12 +337,13 @@ namespace PlayableLightning.Patches
                 player.Action_ShadowGuard();
                 GuardFlash guardFlash = (GuardFlash)FPStage.CreateStageObject(GuardFlash.classID, player.position.x, player.position.y);
                 guardFlash.parentObject = player;
+                dashFlag = true;
             }
             else if (player.input.attackPress && shotDelay < 0f)
             {
                 if (player.state == new FPObjectState(player.State_Crouching) && player.animator.GetCurrentAnimatorStateInfo(0).IsName("Crouching_Loop"))
                 {
-                    player.SetPlayerAnimation("CrouchAttack", null, null, false, true);
+                    player.SetPlayerAnimation("Crouching_Loop", null, null, false, true);
                     player.genericTimer = 0f;
                     shotDelay = 5f;
                     chargeShotDelay = 40f;
@@ -350,7 +353,7 @@ namespace PlayableLightning.Patches
                 }
                 else if (player.state != new FPObjectState(State_Lightning_AttackHold))
                 {
-                    player.SetPlayerAnimation("AttackGround", null, null, false, true);
+                    //player.SetPlayerAnimation("AttackGround", null, null, false, true);
                     player.genericTimer = 0f;
                     shotDelay = 5f;
                     chargeShotDelay = 40f;
@@ -363,7 +366,7 @@ namespace PlayableLightning.Patches
             {
                 if (player.state == new FPObjectState(player.State_Crouching) && player.animator.GetCurrentAnimatorStateInfo(0).IsName("Crouching_Loop"))
                 {
-                    player.SetPlayerAnimation("CrouchAttack", null, null, false, true);
+                    player.SetPlayerAnimation("Crouching_Loop", null, null, false, true);
                     player.genericTimer = 0f;
                     shotDelay = 5f;
                     chargeShotDelay = 40f;
@@ -373,7 +376,7 @@ namespace PlayableLightning.Patches
                 }
                 else if (player.state != new FPObjectState(State_Lightning_AttackHold))
                 {
-                    player.SetPlayerAnimation("AttackGround", null, null, false, true);
+                    player.SetPlayerAnimation("GroundCharge", null, null, false, true);
                     player.genericTimer = 0f;
                     shotDelay = 5f;
                     chargeShotDelay = 50f;
@@ -642,7 +645,12 @@ namespace PlayableLightning.Patches
                     {
                         ApplyGroundForces(player, false);
                         if (player.velocity == Vector2.zero)
-                            player.SetPlayerAnimation("GroundCharge");
+                        {
+                            if (player.state != new FPObjectState(player.State_Crouching))
+                                player.SetPlayerAnimation("Crouching_Loop");
+                            else
+                                player.SetPlayerAnimation("GroundCharge");
+                        }
                         else
                             player.SetPlayerAnimation("RunningShot");
                         player.angle = player.groundAngle;
@@ -813,13 +821,13 @@ namespace PlayableLightning.Patches
         private static void ChargedShotExplosion(ProjectileBasic projectile)
         {
             //Normal charge
-            if (projectile.halfHeight == 10)
+            if (projectile.halfHeight <= 8)
             {
                 //Temp
                 FPStage.CreateStageObject(WhiteBurst.classID, projectile.position.x, projectile.position.y);
             }
             //Full charge
-            else if (projectile.halfHeight == 14)
+            else if (projectile.halfHeight == 10)
             {
                 FPStage.CreateStageObject(Explosion.classID, projectile.position.x, projectile.position.y);
             }

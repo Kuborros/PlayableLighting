@@ -348,6 +348,27 @@ namespace PlayableLightning.Objects
             spriteGhost.activationMode = FPActivationMode.ALWAYS_ACTIVE;
         }
 
+        private void ChargedShotExplosion(ProjectileBasic projectile)
+        {
+            //Normal charge
+            if (projectile.halfHeight <= 8)
+            {
+                //Temp
+                FPStage.CreateStageObject(WhiteBurst.classID, projectile.position.x, projectile.position.y);
+            }
+            //Full charge
+            else if (projectile.halfHeight == 10)
+            {
+                FPStage.CreateStageObject(Explosion.classID, projectile.position.x, projectile.position.y);
+            }
+            //Ubercharge
+            else if (projectile.halfHeight == 20)
+            {
+                FPStage.CreateStageObject(BigExplosion.classID, projectile.position.x, projectile.position.y);
+                FPAudio.PlaySfx(projectile.sfxExplode);
+            }
+        }
+
         private void State_Default()
         {
             SetPlayerAnimation("FightStance");
@@ -593,7 +614,35 @@ namespace PlayableLightning.Objects
             CheckBoundaries();
         }
 
-
+        private void State_Attack()
+        {
+            if (onGround)
+            {
+                ApplyGroundForces();
+                angle = groundAngle;
+                input.left = false;
+                input.right = false;
+                if (currentAnimation == "AttackForward")
+                {
+                    CheckBoundaries();
+                }
+            }
+            else
+            {
+                ApplyAirForces();
+                ApplyGravityForce();
+                CheckBoundaries();
+            }
+            genericTimer += FPStage.deltaTime;
+            if (genericTimer > 2f && animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f)
+            {
+                genericTimer = Random.Range(0f, 20f);
+                state = State_Running;
+                SetPlayerAnimation("Jumping", 0.5f, 0.5f);
+            }
+            InteractWithObjects();
+            Process360Movement();
+        }
 
         //Actions
 
