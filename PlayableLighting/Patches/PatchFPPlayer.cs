@@ -406,12 +406,14 @@ namespace PlayableLightning.Patches
             else if (player.input.up)
                 gravAngleY = 10f;
 
+            /*
             if (player.input.left && player.input.up)
                 player.angle = 210f;
             else if (player.input.right && player.input.up)
                 player.angle = 150f;
             else if (player.input.up)
                 player.angle = 180f;
+            */
 
             if (player.genericTimer <= 30f)
             {
@@ -705,6 +707,7 @@ namespace PlayableLightning.Patches
             player.genericTimer += FPStage.deltaTime;
             player.superArmor = true;
             ghostTimer += FPStage.deltaTime;
+            player.velocity.y = 0f;
             player.attackStats = new FPObjectState(AttackStats_Blink);
 
             if (ghostTimer >= 2f)
@@ -732,34 +735,6 @@ namespace PlayableLightning.Patches
                 return;
             }
         }
-
-        /*
-        internal static void State_Lightning_Dash()
-        {
-            player.SetPlayerAnimation("Dash");
-            player.genericTimer += FPStage.deltaTime;
-            player.superArmor = true;
-
-            if (player.genericTimer >= 15f)
-            {
-                player.genericTimer = 0f;
-                player.hbAttack.enabled = false;
-                player.superArmor = false;
-                if (player.onGround)
-                {
-                    player.state = new FPObjectState(player.State_Ground);
-                }
-                else
-                {
-                    if (player.targetWaterSurface == null) player.SetPlayerAnimation("Jumping_Loop");
-                    else player.SetPlayerAnimation("Swimming");
-
-                    player.state = new FPObjectState(player.State_InAir);
-                }
-                return;
-            }
-        }
-        */
 
         //AttackStats
 
