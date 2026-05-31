@@ -111,6 +111,11 @@ namespace PlayableLightning.Patches
                     text2 = "<c=energy>(Hold) Charge Shot</c>";
                 }
 
+                if (player.input.guardHold && player.energy > 30f)
+                {
+                    text4 = "<c=energy>(Hold) Dash</c>";
+                }
+
             }
 
             //On the ground, excluding funky states
@@ -138,6 +143,11 @@ namespace PlayableLightning.Patches
                 if (player.onGround)
                 {
                     text3 = "<c=energy>-</c>";
+                }
+
+                if (player.input.guardHold && player.energy > 30f)
+                {
+                    text4 = "<c=energy>(Hold) Dash</c>";
                 }
             }
 
