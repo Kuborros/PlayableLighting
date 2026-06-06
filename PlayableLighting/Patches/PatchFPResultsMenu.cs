@@ -11,6 +11,7 @@ namespace PlayableLightning.Patches
         {
             if (___badgeCheckTimer < 61f && !FPStage.currentStage.disableBadgeChecks && FPSaveManager.character == PlayableLightning.currentLightningID)
             {
+                PatchFPPlayer.StopSFXLooping();
                 if ((___badgeCheckTimer + FPStage.deltaTime) >= 60f)
                 {
                     FPSaveManager.BadgeCheck(BadgeHandler.Badges["kubo.lightningrunner"].id);
