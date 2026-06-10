@@ -1,10 +1,12 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
 using FP2Lib.Badge;
+using FP2Lib.Challenge;
 using FP2Lib.Item;
 using FP2Lib.Player;
 using FP2Lib.Vinyl;
 using HarmonyLib;
+using PlayableLightning.Objects;
 using PlayableLightning.Patches;
 using System.IO;
 using UnityEngine;
@@ -20,8 +22,11 @@ namespace PlayableLightning
         public static AssetBundle dataBundle;
         public static AssetBundle tutorialScene;
 
+        public static GameObject bossLightning;
+
         internal static FPCharacterID currentLightningID;
         internal static FPPowerup fastLaddersID;
+        internal static int bossLightningID;
 
         private void Awake()
         {
@@ -63,6 +68,10 @@ namespace PlayableLightning
                 groundSprites = dataBundle.LoadAssetWithSubAssets<Sprite>("Lightning_CameraGround")
             };
 
+            //Load Lightning
+            GameObject playerLightning = dataBundle.LoadAsset<GameObject>("Player Lightning");
+            //Assemble the Boss
+            AssembleLightningBoss(playerLightning);
 
             //Load character select object
             PlayableChara lightningChar = new PlayableChara()
@@ -107,11 +116,11 @@ namespace PlayableLightning
                 sagaBlockSyntax = dataBundle.LoadAsset<RuntimeAnimatorController>("Saga2Lightning"),
                 resultsTrack = lightningClear,
                 endingTrack = lightningTheme,
-                playerBoss = null,
+                playerBoss = bossLightning.GetComponent<PlayerBossLightning>(),
                 menuPhotoPose = menuPhotoPose,
                 characterSelectPrefab = dataBundle.LoadAsset<GameObject>("Menu CS Character Lightning"),
                 menuInstructionPrefab = dataBundle.LoadAsset<GameObject>("MenuInstructionsLightning"),
-                prefab = dataBundle.LoadAsset<GameObject>("Player Lightning"),
+                prefab = playerLightning,
                 dataBundle = dataBundle
             };
 
@@ -122,6 +131,11 @@ namespace PlayableLightning
             else
             {
                 logSource.LogError("Something went veeryyy wrong when registering the character! Oh no!");
+            }
+
+            if (ChallengeHandler.RegisterDojoBoss("kubo.lightningboss","Lightning",100,-1,"???",currentLightningID, dataBundle.LoadAssetWithSubAssets<Sprite>("Lightning_Profile")[1]))
+            {
+                bossLightningID = ChallengeHandler.GetChallengeDataByUID("kubo.lightningboss").id;
             }
 
             Harmony harmony = new Harmony("com.kuborro.plugins.fp2.playablelightning");
@@ -135,6 +149,105 @@ namespace PlayableLightning
             harmony.PatchAll(typeof(PatchMenuWorldMap));
             harmony.PatchAll(typeof(PatchFPEventSequence));
             harmony.PatchAll(typeof(PatchMenuCredits));
+            harmony.PatchAll(typeof(PatchArenaSpawner));
         }
+
+        private void AssembleLightningBoss(GameObject playerLightning)
+        {
+            //Player Boss
+            //EVIL fuckery
+            GameObject dataSource = dataBundle.LoadAsset<GameObject>("Boss Lightning");
+            FPPlayer pboss = playerLightning.GetComponent<FPPlayer>();
+
+            bossLightning = new GameObject();
+            bossLightning.SetActive(false);
+            bossLightning.name = "Boss Lightning";
+            bossLightning.layer = 8; //FG PLANE A
+            bossLightning.transform.position = new Vector3(514, -336, -2);
+
+
+            bossLightning.AddComponent<PlayerBossLightning>();
+            PlayerBossLightning component = bossLightning.GetComponent<PlayerBossLightning>();
+            component.enablePhysics = true;
+            component.terrainCollision = true;
+            component.playerTerrainCheck = true;
+            component.halfWidth = 16;
+            component.halfHeight = 32;
+            component.useScaling = true;
+            component.useRotation = true;
+            component.direction = FPDirection.FACING_LEFT;
+            component.activationMode = FPActivationMode.XY_RANGE;
+            component.activationRange = new Vector2(1600, 1600);
+            component.interactWithObjects = true;
+            component.health = 200;
+            component.hbWeakpoint = new FPHitBox { left = -5, top = 32, right = 25, bottom = -32, enabled = true, visible = true };
+            component.topSpeed = 7.5f;
+            component.acceleration = 0.09f;
+            component.deceleration = 0.09f;
+            component.airAceleration = 0.22125f;
+            component.skidDeceleration = 0.75f;
+            component.skidThreshold = 11;
+            component.gravityStrength = -0.375f;
+            component.jumpStrength = 10.5f;
+            component.jumpRelease = 4.5f;
+            component.fightStanceTime = 200;
+            component.bossActivation = new Vector2(800, 800);
+            component.characterID = BossCharacterID.SPADE;
+            component.recoverAfterKO = true;
+            component.pursuitRange = 800;
+            component.walkRange = new FPHitBox { left = -300, top = -32, right = 200, bottom = -48, enabled = true, visible = true };
+            component.start = new Vector2(514, -336);
+
+            component.sfxJump = pboss.sfxJump;
+            component.sfxSkid = pboss.sfxSkid;
+            component.sfxHurt = pboss.sfxHurt;
+            component.sfxKO = pboss.sfxKO;
+            component.sfxShieldBlock = pboss.sfxShieldBlock;
+            component.sfxShieldHit = pboss.sfxShieldHit;
+
+            component.vaAttack = [null];
+            component.vaHardAttack = pboss.vaHardAttack;
+            component.vaSpecialA = pboss.vaSpecialA;
+            component.vaSpecialB = [null];
+            component.vaHit = pboss.vaHit;
+            component.vaKO = pboss.vaKO;
+            component.vaRevive = pboss.vaRevive;
+            component.vaStart = [null];
+            component.vaExtra = [null];
+
+            bossLightning.AddComponent<SpriteOutline>();
+            bossLightning.GetComponent<SpriteOutline>().enabled = false;
+            bossLightning.GetComponent<SpriteOutline>().color = new Color(0, 139, 255, 255);
+            bossLightning.GetComponent<SpriteOutline>().outlineSize = 1;
+
+            bossLightning.AddComponent<SpriteRenderer>();
+            bossLightning.GetComponent<SpriteRenderer>().sprite = dataBundle.LoadAssetWithSubAssets<Sprite>("Lightning_Idle")[0];
+            bossLightning.GetComponent<SpriteRenderer>().material = dataSource.GetComponent<SpriteRenderer>().material;
+
+            bossLightning.AddComponent<Animator>();
+            bossLightning.GetComponent<Animator>().runtimeAnimatorController = dataBundle.LoadAsset<RuntimeAnimatorController>("Lightning Animator Player");
+
+            GameObject dashAura = new GameObject();
+            dashAura.name = "DashAura";
+            dashAura.layer = 8;
+            dashAura.transform.parent = bossLightning.transform;
+            dashAura.AddComponent<SpriteRenderer>();
+            dashAura.AddComponent<Animator>();
+            dashAura.GetComponent<Animator>().runtimeAnimatorController = dataBundle.LoadAsset<RuntimeAnimatorController>("DashAura");
+            dashAura.SetActive(false);
+
+            GameObject chargeFX = new GameObject();
+            chargeFX.name = "ChargeFX";
+            chargeFX.layer = 8;
+            chargeFX.transform.parent = bossLightning.transform;
+            chargeFX.transform.localPosition = new Vector3(27, -3, 0);
+            chargeFX.AddComponent<SpriteRenderer>();
+            chargeFX.AddComponent<Animator>();
+            chargeFX.GetComponent<Animator>().runtimeAnimatorController = dataBundle.LoadAsset<RuntimeAnimatorController>("ChargeFX");
+            chargeFX.SetActive(false);
+
+            DontDestroyOnLoad(bossLightning);
+        }
+
     }
 }

@@ -11,7 +11,6 @@ namespace PlayableLightning.Patches
         public static FPPlayer player;
 
         public static AudioClip basicShotExplodeSfx;
-        public static AudioClip chargeShotExplodeSfx;
 
         internal static float guardBuffer;
         internal static float jumpMultiplier;

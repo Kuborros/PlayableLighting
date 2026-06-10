@@ -1,6 +1,6 @@
-﻿using HarmonyLib;
+﻿using BepInEx.Logging;
+using HarmonyLib;
 using System;
-using System.Reflection;
 using UnityEngine;
 using static Ferr.Path2D;
 using Object = UnityEngine.Object;
@@ -11,26 +11,24 @@ namespace PlayableLightning.Objects
     internal class PlayerBossLightning : PlayerBoss
     {
         public static int classID = -1;
+        internal static ManualLogSource logSource = PlayableLightning.logSource;
 
         [Header("Boss Settings")]
         public FPHitBox walkRange;
         public float pursuitRange;
         public FPBaseObject targetToPursue;
 
-        private int comboState;
         private GameObject chargeFX;
+        private float shotDelay = 0;
+        private float ghostTimer = 0;
+        private float spinDelay = 10f;
+        private bool stuffInitDone = false;
 
         private RuntimeAnimatorController baseProjectile;
-        private RuntimeAnimatorController partChargeProjectile;
         private RuntimeAnimatorController fullChargeProjectile;
-        private RuntimeAnimatorController uberChargeProjectile;
 
-        //Spooky Constructor
-        public PlayerBossLightning(PlayerBoss source)
-        {
-            foreach (PropertyInfo prop in source.GetType().GetProperties())
-                GetType().GetProperty(prop.Name).SetValue(this, prop.GetValue(source, null), null);
-        }
+
+        private AudioClip sfxFire, sfxBigFire, sfxChargeIntro, sfxChargeLoop;
 
         //Generic boss stuff
         public override void ResetStaticVars()
@@ -58,7 +56,7 @@ namespace PlayableLightning.Objects
         {
             if (faction != "Player")
             {
-                FPPlayer fPPlayer = FPStage.FindNearestPlayer(this, 640f);
+                FPPlayer fPPlayer = FPStage.FindNearestPlayer(this, 800f);
                 if (fPPlayer != null)
                 {
                     if (invincibility > 0f)
@@ -118,7 +116,7 @@ namespace PlayableLightning.Objects
             {
                 direction = FPDirection.FACING_RIGHT;
             }
-            if (colliderWall != null)
+            if (colliderWall != null && spinDelay < 0f)
             {
                 if (onGround)
                 {
@@ -129,6 +127,7 @@ namespace PlayableLightning.Objects
                     velocity.x = 0f - prevVelocity.x;
                 }
                 direction ^= FPDirection.FACING_RIGHT;
+                spinDelay = 30f;
             }
             if (direction == FPDirection.FACING_RIGHT)
             {
@@ -281,12 +280,29 @@ namespace PlayableLightning.Objects
                 {
                     energy += 0.4f * FPStage.deltaTime;
                 }
+                shotDelay += FPStage.deltaTime;
+                spinDelay -= FPStage.deltaTime;
             }
         }
 
         private new void Start()
         {
             healthToFlinch = health - 25f;
+            if (FPStage.stageNameString == "Training")
+            {
+                gameObject.AddComponent<FPBossHud>();
+                FPBossHud componentHud = GetComponent<FPBossHud>();
+                componentHud.targetBoss = this;
+                componentHud.maxHealth = health;
+                componentHud.maxPetals = 8;
+                componentHud.barWidth = 200;
+                //GameObject bingus = GameObject.Find("Boss Milla");
+                GameObject bingus = PlayableLightning.dataBundle.LoadAsset<GameObject>("Boss Lightning");
+                componentHud.barSprite = bingus.GetComponent<FPBossHud>().barSprite;
+                componentHud.pfHudBase = bingus.GetComponent<FPBossHud>().pfHudBase;
+                componentHud.pfHudLifePetal = bingus.GetComponent<FPBossHud>().pfHudLifePetal;
+            }
+
             base.Start();
             classID = FPStage.RegisterObjectType(this, GetType(), 0);
             objectID = classID;
@@ -307,12 +323,18 @@ namespace PlayableLightning.Objects
                 component2.enabled = true;
             }
 
+            InitLightningSpecificStuff();
+        }
+
+        private void InitLightningSpecificStuff()
+        {
+            if (stuffInitDone) return;
             //Lightning stuff
 
             //Append 2 extra spare audio channels
             //Channel 4 - Looping SFX
             //Channel 5 - Things normal game logic should not mess with
-            for (int i = 4; i < 6; i++)
+            for (int i = 3; i < 6; i++)
             {
                 GameObject gameObject = new GameObject("PlayerAudioSource");
                 gameObject.transform.parent = gameObject.transform;
@@ -323,16 +345,20 @@ namespace PlayableLightning.Objects
 
             //Load projectile animations
             baseProjectile = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("BaseProjectile");
-            partChargeProjectile = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("PartChargeProjectile");
             fullChargeProjectile = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("FullChargeProjectile");
-            uberChargeProjectile = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("UberChargeProjectile");
+
+            //Audio
+            sfxFire = PlayableLightning.dataBundle.LoadAsset<AudioClip>("LV1 Shot");
+            sfxBigFire = PlayableLightning.dataBundle.LoadAsset<AudioClip>("LV3 Shot");
+            sfxChargeIntro = PlayableLightning.dataBundle.LoadAsset<AudioClip>("Charge_Intro");
+            sfxChargeLoop = PlayableLightning.dataBundle.LoadAsset<AudioClip>("Charge_Loop");
 
             //Spooky
             GameObject ghost = PlayableLightning.dataBundle.LoadAsset<GameObject>("DashGhost");
             GameObject.Instantiate(ghost);
 
             chargeFX = gameObject.transform.GetChild(1).gameObject;
-
+            stuffInitDone = true;
         }
 
         private void Ghost()
@@ -348,35 +374,17 @@ namespace PlayableLightning.Objects
             spriteGhost.activationMode = FPActivationMode.ALWAYS_ACTIVE;
         }
 
-        private void ChargedShotExplosion(ProjectileBasic projectile)
-        {
-            //Normal charge
-            if (projectile.halfHeight <= 8)
-            {
-                //Temp
-                FPStage.CreateStageObject(WhiteBurst.classID, projectile.position.x, projectile.position.y);
-            }
-            //Full charge
-            else if (projectile.halfHeight == 10)
-            {
-                FPStage.CreateStageObject(Explosion.classID, projectile.position.x, projectile.position.y);
-            }
-            //Ubercharge
-            else if (projectile.halfHeight == 20)
-            {
-                FPStage.CreateStageObject(BigExplosion.classID, projectile.position.x, projectile.position.y);
-                FPAudio.PlaySfx(projectile.sfxExplode);
-            }
-        }
-
         private void State_Default()
         {
             SetPlayerAnimation("FightStance");
             spriteRenderer.sprite = null;
+            InitLightningSpecificStuff();
+            attackStats = AttackStats_Idle;
             if (!bossActivated && FPStage.timeEnabled && targetPlayer != null && targetPlayer.position.x > position.x - bossActivation.x && targetPlayer.position.x < position.x + bossActivation.x && targetPlayer.position.y > position.y - bossActivation.y && targetPlayer.position.y < position.y + bossActivation.y)
             {
                 if (bgmBoss != null)
                 {
+                    FPAudio.StopMusic();
                     FPAudio.PlayMusic(bgmBoss);
                 }
                 Action_PlayVoice(vaStart[Random.Range(0, vaStart.Length - 1)]);
@@ -384,20 +392,14 @@ namespace PlayableLightning.Objects
                 voiceTimer = 240f;
                 bossActivated = true;
                 FPBossHud component = GetComponent<FPBossHud>();
-                if (component != null)
-                {
-                    component.MoveIn();
-                }
+                component?.MoveIn();
                 state = State_Running;
             }
             if (!FPStage.ConfirmClassWithPoolTypeID(typeof(FPPlayer), FPPlayer.classID))
             {
                 bossActivated = true;
                 FPBossHud component2 = GetComponent<FPBossHud>();
-                if (component2 != null)
-                {
-                    component2.MoveIn();
-                }
+                component2?.MoveIn();
                 state = State_Running;
             }
         }
@@ -490,6 +492,7 @@ namespace PlayableLightning.Objects
             InteractWithObjects();
             Process360Movement();
             RotatePlayerUpright();
+            NoAuraFarming();
             genericTimer += FPStage.deltaTime;
             if (onGround)
             {
@@ -501,14 +504,13 @@ namespace PlayableLightning.Objects
             animator.SetSpeed(1f);
             ApplyAirForces();
             ApplyGravityForce();
-            if (genericTimer > 0f && nextAttack == 2)
+            if (genericTimer > 0f && nextAttack >= 3)
             {
-                nextAttack = Random.Range(0, 1);
-                comboState = 0;
-                SetPlayerAnimation("AirAttack");
+                //Mid-air shots
+                nextAttack = Random.Range(0, 2);
+                genericTimer = 0f;
                 animator.SetSpeed(Mathf.Max(1f, 0.7f + Mathf.Abs(velocity.x * 0.05f)));
-                childAnimator.SetSpeed(Mathf.Max(1f, 0.7f + Mathf.Abs(velocity.x * 0.05f)));
-                //state = State_HairWhip;
+                state = State_BasicShots;
                 combo = false;
                 Action_StopSound();
             }
@@ -522,25 +524,19 @@ namespace PlayableLightning.Objects
                 switch (nextAttack)
                 {
                     case 0:
-                        SetPlayerAnimation("Rolling");
-                        //state = State_DivekickPt1;
-                        //Action_PlaySoundUninterruptable(sfxDivekick1);
+                        genericTimer = 0f;
+                        state = State_BasicShots;
                         nextAttack = Random.Range(0, 3);
                         break;
                     case 1:
-                        velocity.y = Mathf.Max(velocity.y, 5f);
+                        state = State_Lightning_Dash;
                         genericTimer = 0f;
-                        SetPlayerAnimation("Cyclone");
-                        //state = State_Cyclone;
-                        jumpAbilityFlag = true;
-                        //attackStats = base.AttackStats_Cyclone;
-                        //Action_PlaySound(sfxCyclone);
-                        if (voiceTimer <= 0f)
-                        {
-                            voiceTimer = 600f;
-                            Action_PlayVoiceArray("SpecialA");
-                        }
                         nextAttack = Random.Range(0, 3);
+                        break;
+                    case 2:
+                        genericTimer = 0f;
+                        nextAttack = Random.Range(0, 3);
+                        state = State_ChargeShot;
                         break;
                 }
             }
@@ -550,16 +546,31 @@ namespace PlayableLightning.Objects
         {
             InteractWithObjects();
             Process360Movement();
+            NoAuraFarming();
             if (!FPStage.timeEnabled)
             {
                 energy = 0f;
             }
+
+            if (Random.Range(0, 3) > 1)
+            {
+                if (position.x >= start.x)
+                {
+                    direction = FPDirection.FACING_LEFT;
+                }
+                else
+                {
+                    direction = FPDirection.FACING_RIGHT;
+                }
+            }
+
             if (onGround)
             {
                 ApplyGroundForces();
                 angle = groundAngle;
                 ApplyGroundAnimation();
-                if (energy >= 100f && genericTimer >= 0f)
+
+                if (nextAttack % 2 == 1 && genericTimer >= 0f)
                 {
                     if (position.x >= start.x)
                     {
@@ -571,8 +582,19 @@ namespace PlayableLightning.Objects
                     }
                     genericTimer = 0f;
                     specialAttackDirection = 2;
-                    //state = State_DragonBoostPt1;
-                    //Action_PlaySoundUninterruptable(sfxBoostCharge);
+                    if (Random.Range(0, 3) < 2)
+                    {
+                        genericTimer = 0f;
+                        nextAttack++;
+                        logSource.LogDebug("Engaging normal ground attack");
+                        state = State_BasicShots;
+                    }
+                    else
+                    {
+                        nextAttack++;
+                        genericTimer = 0f;
+                        state = State_ChargeShot;
+                    }
                 }
                 else
                 {
@@ -614,17 +636,30 @@ namespace PlayableLightning.Objects
             CheckBoundaries();
         }
 
-        private void State_Attack()
+        private void State_BasicShots()
         {
+            if (faction != "Player")
+            {
+                Action_FacePlayer();
+            }
+
             if (onGround)
             {
                 ApplyGroundForces();
                 angle = groundAngle;
                 input.left = false;
                 input.right = false;
-                if (currentAnimation == "AttackForward")
+                CheckBoundaries();
+                if (velocity.x < 2 && velocity.x > -2)
+                    SetPlayerAnimation("GroundCharge");
+                else
+                    SetPlayerAnimation("RunningShot");
+                //Ground firing logic
+                if (shotDelay > 10)
                 {
-                    CheckBoundaries();
+                    Action_Lightning_NormalShotFire();
+                    shotDelay = 0;
+                    energy = -10f;
                 }
             }
             else
@@ -632,35 +667,163 @@ namespace PlayableLightning.Objects
                 ApplyAirForces();
                 ApplyGravityForce();
                 CheckBoundaries();
+                //Air firing logic
+                SetPlayerAnimation("Jumping_Loop");
+                if (shotDelay > 10)
+                {
+                    Action_Lightning_NormalShotFire();
+                    shotDelay = 0;
+                    energy = -10f;
+                }
             }
             genericTimer += FPStage.deltaTime;
-            if (genericTimer > 2f && animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f)
+
+            //State Exit
+            if (genericTimer > 50f)
             {
-                genericTimer = Random.Range(0f, 20f);
+                genericTimer = Random.Range(-10f, 10f);
                 state = State_Running;
-                SetPlayerAnimation("Jumping", 0.5f, 0.5f);
+                if (!onGround)
+                    SetPlayerAnimation("Jumping_Loop", 0.5f, 0.5f);
             }
             InteractWithObjects();
             Process360Movement();
+        }
+
+        private void State_ChargeShot()
+        {
+            input.right = false;
+            input.left = false;
+
+            if (faction != "Player")
+            {
+                Action_FacePlayer();
+            }
+
+            if (onGround)
+            {
+                SetPlayerAnimation("GroundCharge");
+                ApplyGroundForces();
+            }
+            else
+            {
+                SetPlayerAnimation("AirCharge");
+                ApplyAirForces();
+                ApplyGravityForce();
+            }
+
+            PlaySFXCh5(sfxChargeIntro);
+            PlaySFXLooping(sfxChargeLoop, 1.5f);
+            genericTimer += FPStage.deltaTime;
+
+            chargeFX.gameObject.SetActive(true);
+            if (genericTimer < 20f)
+            {
+                chargeFX.GetComponent<Animator>().Play("Charge1_Intro");
+            }
+            else if (genericTimer >= 20f && genericTimer < 40f)
+            {
+                chargeFX.GetComponent<Animator>().Play("Charge2_Intro");
+            }
+            else if (genericTimer >= 40f)
+            {
+                chargeFX.GetComponent<Animator>().Play("Charge3_Intro");
+            }
+            if (genericTimer > 60f)
+            {
+                StopSFXLooping();
+                StopSFXCh5();
+                chargeFX.gameObject.SetActive(false);
+
+                Action_Lightning_ChargedShotFire();
+
+                if (onGround)
+                {
+                    state = State_Running;
+                    genericTimer = Random.Range(-20f, 0f);
+                }
+                else
+                {
+                    SetPlayerAnimation("Jumping", 0.5f, 0.5f);
+                    state = State_Running;
+                    genericTimer = 0f;
+
+                }
+            }
+            CheckBoundaries();
+            InteractWithObjects();
+            Process360Movement();
+        }
+
+        private void State_Lightning_Dash()
+        {
+            SetPlayerAnimation("AirDash");
+            genericTimer += FPStage.deltaTime;
+            superArmor = true;
+            ghostTimer += FPStage.deltaTime;
+            if (!onGround)
+            {
+                velocity.y = 0f;
+                ApplyAirForces();
+            }
+            else ApplyGroundForces();
+
+            attackStats = new FPObjectState(AttackStats_Blink);
+
+            if (ghostTimer >= 2f)
+            {
+                Ghost();
+                ghostTimer = 0f;
+            }
+
+            if (genericTimer >= 15f)
+            {
+                genericTimer = 0f;
+                hbAttack.enabled = false;
+                superArmor = false;
+                if (onGround)
+                {
+                    state = new FPObjectState(State_Running);
+                }
+                else
+                {
+                    SetPlayerAnimation("Jumping_Loop");
+                    state = new FPObjectState(State_Jumping);
+                }
+                return;
+            }
+        }
+
+        //AttackStats
+
+        private new void AttackStats_Idle()
+        {
+            attackPower = 2f;
+            attackHitstun = 4f;
+            attackEnemyInvTime = 5f / animator.speed;
+            attackKnockback.x = 0f;
+            attackKnockback.y = 0f;
+            attackSfx = 5;
         }
 
         //Actions
 
         internal void Action_Lightning_NormalShotFire()
         {
-            //FPAudio.PlaySfx(basicShotSfx);
+            //FPAudio.PlaySfx(sfxFire);
+            Action_PlaySound(sfxFire);
             ProjectileBasic basicShot;
             if (direction == FPDirection.FACING_LEFT)
             {
                 basicShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, chargeFX.transform.position.x, chargeFX.transform.position.y);
-                basicShot.velocity.x = Mathf.Cos(0.017453292f * angle) * -20f;
-                basicShot.velocity.y = Mathf.Sin(0.017453292f * angle) * -20f;
+                basicShot.velocity.x = Mathf.Cos(0.017453292f * angle) * -15f;
+                basicShot.velocity.y = Mathf.Sin(0.017453292f * angle) * -15f;
             }
             else
             {
                 basicShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, chargeFX.transform.position.x, chargeFX.transform.position.y);
-                basicShot.velocity.x = Mathf.Cos(0.017453292f * angle) * 20f;
-                basicShot.velocity.y = Mathf.Sin(0.017453292f * angle) * 20f;
+                basicShot.velocity.x = Mathf.Cos(0.017453292f * angle) * 15f;
+                basicShot.velocity.y = Mathf.Sin(0.017453292f * angle) * 15f;
             }
             basicShot.animatorController = baseProjectile;
             basicShot.animator = basicShot.GetComponent<Animator>();
@@ -680,10 +843,101 @@ namespace PlayableLightning.Objects
             basicShot.parentObject = this;
             basicShot.faction = faction;
             basicShot.timeBeforeCollisions = 0f;
-            //basicShot.hbTouch = new FPHitBox { };
             basicShot.halfHeight = 4;
             basicShot.halfWidth = 8;
+        }
 
+        internal void Action_Lightning_ChargedShotFire()
+        {
+            ProjectileBasic chargeShot;
+            if (direction == FPDirection.FACING_LEFT)
+            {
+                chargeShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, chargeFX.transform.position.x, chargeFX.transform.position.y);
+                chargeShot.velocity.x = Mathf.Cos(0.017453292f * angle) * -10f;
+                chargeShot.velocity.y = Mathf.Sin(0.017453292f * angle) * -10f;
+            }
+            else
+            {
+                chargeShot = (ProjectileBasic)FPStage.CreateStageObject(ProjectileBasic.classID, chargeFX.transform.position.x, chargeFX.transform.position.y);
+                chargeShot.velocity.x = Mathf.Cos(0.017453292f * angle) * 10f;
+                chargeShot.velocity.y = Mathf.Sin(0.017453292f * angle) * 10f;
+            }
+            chargeShot.animatorController = fullChargeProjectile;
+            chargeShot.ignoreTerrain = true;
+            chargeShot.halfHeight = 20;
+            chargeShot.halfWidth = 24;
+            chargeShot.animator = chargeShot.GetComponent<Animator>();
+            chargeShot.animator.runtimeAnimatorController = chargeShot.animatorController;
+            chargeShot.attackPower = 10;
+            chargeShot.direction = direction;
+            chargeShot.angle = angle;
+            chargeShot.damageElementType = 3;
+            chargeShot.explodeType = FPExplodeType.EXPLOSION;
+            chargeShot.ignoreInvincibility = true;
+            chargeShot.destroyOnHit = false;
+            chargeShot.explodeTimer = 100f;
+            chargeShot.terminalVelocity = 0f;
+            chargeShot.gravityStrength = 0;
+            chargeShot.parentObject = this;
+            chargeShot.faction = faction;
+            chargeShot.timeBeforeCollisions = 0f;
+            FPAudio.PlaySfx(sfxBigFire);
+        }
+
+        //Other Stuff
+
+        private void PlaySFXLooping(AudioClip clip, float delay)
+        {
+            //Channel 4 is used for Carol's bike, so we can repurpose it here.
+            if (clip != null)
+            {
+                if (audioChannel[4].clip != clip)
+                {
+                    audioChannel[4].clip = clip;
+                    audioChannel[4].loop = true;
+                    audioChannel[4].PlayDelayed(delay);
+                }
+            }
+        }
+
+        public void StopSFXLooping()
+        {
+            if (audioChannel[4].clip != null)
+            {
+                audioChannel[4].Stop();
+                audioChannel[4].clip = null;
+            }
+        }
+
+        private void PlaySFXCh5(AudioClip clip)
+        {
+            if (clip != null)
+            {
+                if (audioChannel[5].clip != clip)
+                {
+                    audioChannel[5].clip = clip;
+                    audioChannel[5].loop = false;
+                    audioChannel[5].Play();
+                }
+            }
+        }
+
+        public void StopSFXCh5()
+        {
+            if (audioChannel[5].clip != null)
+            {
+                audioChannel[5].Stop();
+                audioChannel[5].clip = null;
+            }
+        }
+
+        internal void NoAuraFarming()
+        {
+            if (transform.GetChild(0).gameObject.activeSelf)
+                transform.GetChild(0).gameObject.SetActive(false);
+
+            StopSFXLooping();
+            StopSFXCh5();
         }
     }
 }
