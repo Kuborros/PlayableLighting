@@ -1,8 +1,5 @@
 ﻿using BepInEx.Logging;
-using HarmonyLib;
-using System;
 using UnityEngine;
-using static Ferr.Path2D;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
@@ -288,40 +285,29 @@ namespace PlayableLightning.Objects
         private new void Start()
         {
             healthToFlinch = health - 25f;
-            if (FPStage.stageNameString == "Training")
-            {
-                gameObject.AddComponent<FPBossHud>();
-                FPBossHud componentHud = GetComponent<FPBossHud>();
-                componentHud.targetBoss = this;
-                componentHud.maxHealth = health;
-                componentHud.maxPetals = 8;
-                componentHud.barWidth = 200;
-                //GameObject bingus = GameObject.Find("Boss Milla");
-                GameObject bingus = PlayableLightning.dataBundle.LoadAsset<GameObject>("Boss Lightning");
-                componentHud.barSprite = bingus.GetComponent<FPBossHud>().barSprite;
-                componentHud.pfHudBase = bingus.GetComponent<FPBossHud>().pfHudBase;
-                componentHud.pfHudLifePetal = bingus.GetComponent<FPBossHud>().pfHudLifePetal;
-            }
 
             base.Start();
             classID = FPStage.RegisterObjectType(this, GetType(), 0);
             objectID = classID;
 
             //Mirror Match
-            if (FPSaveManager.character != PlayableLightning.currentLightningID)
+            if (FPSaveManager.character == PlayableLightning.currentLightningID)
             {
-                return;
+                SpriteRenderer component = GetComponent<SpriteRenderer>();
+                if (component != null)
+                {
+                    component.color = new Color(0f, 1f, 1f);
+                }
+                SpriteOutline component2 = GetComponent<SpriteOutline>();
+                if (component2 != null)
+                {
+                    component2.enabled = true;
+                }
             }
-            SpriteRenderer component = GetComponent<SpriteRenderer>();
-            if (component != null)
-            {
-                component.color = new Color(0f, 1f, 1f);
-            }
-            SpriteOutline component2 = GetComponent<SpriteOutline>();
-            if (component2 != null)
-            {
-                component2.enabled = true;
-            }
+
+            FPBossHud componentHud = GetComponent<FPBossHud>();
+            componentHud.targetBoss = this;
+            componentHud.maxHealth = health;
 
             InitLightningSpecificStuff();
         }
@@ -330,18 +316,6 @@ namespace PlayableLightning.Objects
         {
             if (stuffInitDone) return;
             //Lightning stuff
-
-            //Append 2 extra spare audio channels
-            //Channel 4 - Looping SFX
-            //Channel 5 - Things normal game logic should not mess with
-            for (int i = 3; i < 6; i++)
-            {
-                GameObject gameObject = new GameObject("PlayerAudioSource");
-                gameObject.transform.parent = gameObject.transform;
-                audioChannel = audioChannel.AddToArray(gameObject.AddComponent<AudioSource>());
-                audioChannel[i].volume = FPSaveManager.volumeSfx;
-                audioChannel[i].playOnAwake = false;
-            }
 
             //Load projectile animations
             baseProjectile = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("BaseProjectile");
@@ -432,61 +406,6 @@ namespace PlayableLightning.Objects
             InteractWithObjects();
         }
 
-        private new void State_Idle()
-        {
-            InteractWithObjects();
-            Process360Movement();
-            input.left = false;
-            input.right = false;
-            if (onGround)
-            {
-                ApplyGroundForces();
-                angle = groundAngle;
-                ApplyGroundAnimation();
-                if (nextAttack <= 4 && FPStage.timeEnabled)
-                {
-                    SetPlayerAnimation("GuardRun");
-                    genericTimer = 0f;
-                    guardTime = 30f;
-                    invincibility = Mathf.Max(invincibility, 20f);
-                    GuardFlash guardFlash = (GuardFlash)FPStage.CreateStageObject(GuardFlash.classID, position.x, position.y);
-                    guardFlash.parentObject = this;
-                    return;
-                }
-                if (genericTimer > 40f)
-                {
-                    state = State_Running;
-                    if (!FPStage.timeEnabled)
-                    {
-                        genericTimer = -30f;
-                    }
-                    return;
-                }
-            }
-            else
-            {
-                if (nextAttack <= 4)
-                {
-                    SetPlayerAnimation("GuardAir");
-                    genericTimer = 0f;
-                    guardTime = 30f;
-                    invincibility = Mathf.Max(invincibility, 20f);
-                    GuardFlash guardFlash2 = (GuardFlash)FPStage.CreateStageObject(GuardFlash.classID, position.x, position.y);
-                    guardFlash2.parentObject = this;
-                    return;
-                }
-                ApplyAirForces();
-                ApplyGravityForce();
-                if (currentAnimation == "Walking" || currentAnimation == "Running" || currentAnimation == "TopSpeed" || currentAnimation == "Hit1" || currentAnimation == "Hit2")
-                {
-                    SetPlayerAnimation("Jumping", 0.5f, 0.5f);
-                    animator.SetSpeed(1f);
-                }
-            }
-            ApplyGroundAnimation();
-            genericTimer += FPStage.deltaTime;
-        }
-
         private void State_Jumping()
         {
             InteractWithObjects();
@@ -504,14 +423,12 @@ namespace PlayableLightning.Objects
             animator.SetSpeed(1f);
             ApplyAirForces();
             ApplyGravityForce();
-            if (genericTimer > 0f && nextAttack >= 3)
+            if (genericTimer > 0f && (Random.Range(0, 100) % 3) == 3)
             {
                 //Mid-air shots
-                nextAttack = Random.Range(0, 2);
                 genericTimer = 0f;
                 animator.SetSpeed(Mathf.Max(1f, 0.7f + Mathf.Abs(velocity.x * 0.05f)));
                 state = State_BasicShots;
-                combo = false;
                 Action_StopSound();
             }
             else
@@ -521,23 +438,27 @@ namespace PlayableLightning.Objects
                     return;
                 }
                 genericTimer = 0f;
-                switch (nextAttack)
+                int attack = Random.Range(0, 100);
+
+                if (attack < 40)
                 {
-                    case 0:
-                        genericTimer = 0f;
-                        state = State_BasicShots;
-                        nextAttack = Random.Range(0, 3);
-                        break;
-                    case 1:
-                        state = State_Lightning_Dash;
-                        genericTimer = 0f;
-                        nextAttack = Random.Range(0, 3);
-                        break;
-                    case 2:
-                        genericTimer = 0f;
-                        nextAttack = Random.Range(0, 3);
-                        state = State_ChargeShot;
-                        break;
+                    genericTimer = 0f;
+                    state = State_BasicShots;
+                }
+                else if (attack < 60)
+                {
+                    genericTimer = 0f;
+                    if (colliderWall == null)
+                    {
+                        state = State_Lightning_WingSmash_P1;
+                    }
+                }
+                else
+                {
+                    genericTimer = 0f;
+                    Action_PlaySound(sfxChargeIntro);
+                    state = State_ChargeShot;
+
                 }
             }
         }
@@ -585,16 +506,15 @@ namespace PlayableLightning.Objects
                     if (Random.Range(0, 3) < 2)
                     {
                         genericTimer = 0f;
-                        nextAttack++;
-                        logSource.LogDebug("Engaging normal ground attack");
                         state = State_BasicShots;
                     }
                     else
                     {
-                        nextAttack++;
                         genericTimer = 0f;
+                        Action_PlaySound(sfxChargeIntro);
                         state = State_ChargeShot;
                     }
+                    nextAttack++;
                 }
                 else
                 {
@@ -681,7 +601,7 @@ namespace PlayableLightning.Objects
             //State Exit
             if (genericTimer > 50f)
             {
-                genericTimer = Random.Range(-10f, 10f);
+                genericTimer = Random.Range(-20f, 10f);
                 state = State_Running;
                 if (!onGround)
                     SetPlayerAnimation("Jumping_Loop", 0.5f, 0.5f);
@@ -712,8 +632,6 @@ namespace PlayableLightning.Objects
                 ApplyGravityForce();
             }
 
-            PlaySFXCh5(sfxChargeIntro);
-            PlaySFXLooping(sfxChargeLoop, 1.5f);
             genericTimer += FPStage.deltaTime;
 
             chargeFX.gameObject.SetActive(true);
@@ -731,8 +649,7 @@ namespace PlayableLightning.Objects
             }
             if (genericTimer > 60f)
             {
-                StopSFXLooping();
-                StopSFXCh5();
+                Action_StopSound();
                 chargeFX.gameObject.SetActive(false);
 
                 Action_Lightning_ChargedShotFire();
@@ -740,7 +657,7 @@ namespace PlayableLightning.Objects
                 if (onGround)
                 {
                     state = State_Running;
-                    genericTimer = Random.Range(-20f, 0f);
+                    genericTimer = Random.Range(-30f, 0f);
                 }
                 else
                 {
@@ -755,32 +672,96 @@ namespace PlayableLightning.Objects
             Process360Movement();
         }
 
-        private void State_Lightning_Dash()
+        internal void State_Lightning_WingSmash_P1()
         {
-            SetPlayerAnimation("AirDash");
-            genericTimer += FPStage.deltaTime;
-            superArmor = true;
-            ghostTimer += FPStage.deltaTime;
-            if (!onGround)
+            SetPlayerAnimation("WingSmash");
+
+            if (genericTimer <= 15f)
             {
-                velocity.y = 0f;
-                ApplyAirForces();
+                genericTimer += FPStage.deltaTime;
+                velocity.x = 0f;
+                angle = 0f;
+                if (velocity.x > 0f)
+                {
+                    velocity.x -= 0.125f * FPStage.deltaTime;
+                }
+                else if (velocity.x < 0f)
+                {
+                    velocity.x += 0.125f * FPStage.deltaTime;
+                }
+                if (velocity.y > 0f)
+                {
+                    velocity.y -= 0.125f * FPStage.deltaTime;
+                }
+                else if (velocity.y < 0f)
+                {
+                    velocity.y += 0.125f * FPStage.deltaTime;
+                }
+                if (position.x >= start.x)
+                {
+                    direction = FPDirection.FACING_LEFT;
+                }
+                else
+                {
+                    direction = FPDirection.FACING_RIGHT;
+                }
             }
-            else ApplyGroundForces();
-
-            attackStats = new FPObjectState(AttackStats_Blink);
-
-            if (ghostTimer >= 2f)
-            {
-                Ghost();
-                ghostTimer = 0f;
-            }
-
-            if (genericTimer >= 15f)
+            else
             {
                 genericTimer = 0f;
+                state = new FPObjectState(State_Lightning_WingSmash_P2);
+            }
+        }
+
+        internal void State_Lightning_WingSmash_P2()
+        {
+            genericTimer += FPStage.deltaTime;
+            SetPlayerAnimation("WingSmash_Loop");
+            superArmor = true;
+            ghostTimer += FPStage.deltaTime;
+            attackStats = new FPObjectState(AttackStats_Blink);
+
+            if (Mathf.Repeat(genericTimer, 4f) < 1f)
+            {
+                FPStage.CreateStageObject(Sparkle.classID, position.x + UnityEngine.Random.Range(-24f, 24f), position.y + UnityEngine.Random.Range(-24f, 24f));
+            }
+
+            if (direction == FPDirection.FACING_LEFT)
+            {
+                velocity.x = Mathf.Min(Mathf.Min(velocity.x, 0f) * 0.5f - 6f, velocity.x);
+                velocity.y = 0f;
+            }
+            else
+            {
+                velocity.x = Mathf.Max(Mathf.Max(velocity.x, 0f) * 0.5f + 6f, velocity.x);
+                velocity.y = 0f;
+            }
+
+            if (input.up)
+            {
+                velocity.y += 7.5f * FPStage.deltaTime;
+                if (direction == FPDirection.FACING_RIGHT)
+                    angle = 10f;
+                else
+                    angle = -10f;
+            }
+            else if (input.down)
+            {
+                velocity.y -= 7.5f * FPStage.deltaTime;
+                if (direction == FPDirection.FACING_RIGHT)
+                    angle = -10f;
+                else
+                    angle = 10f;
+            }
+
+            energy -= 1.5f * FPStage.deltaTime;
+            Process360Movement();
+
+            if (onGround || colliderWall != null || genericTimer >= 40f || energy <= 0f)
+            {
                 hbAttack.enabled = false;
                 superArmor = false;
+                flashTime = 0f;
                 if (onGround)
                 {
                     state = new FPObjectState(State_Running);
@@ -788,9 +769,9 @@ namespace PlayableLightning.Objects
                 else
                 {
                     SetPlayerAnimation("Jumping_Loop");
-                    state = new FPObjectState(State_Jumping);
+                    state = new FPObjectState(State_Running);
                 }
-                return;
+                attackStats = new FPObjectState(AttackStats_Idle);
             }
         }
 
@@ -886,58 +867,12 @@ namespace PlayableLightning.Objects
 
         //Other Stuff
 
-        private void PlaySFXLooping(AudioClip clip, float delay)
-        {
-            //Channel 4 is used for Carol's bike, so we can repurpose it here.
-            if (clip != null)
-            {
-                if (audioChannel[4].clip != clip)
-                {
-                    audioChannel[4].clip = clip;
-                    audioChannel[4].loop = true;
-                    audioChannel[4].PlayDelayed(delay);
-                }
-            }
-        }
-
-        public void StopSFXLooping()
-        {
-            if (audioChannel[4].clip != null)
-            {
-                audioChannel[4].Stop();
-                audioChannel[4].clip = null;
-            }
-        }
-
-        private void PlaySFXCh5(AudioClip clip)
-        {
-            if (clip != null)
-            {
-                if (audioChannel[5].clip != clip)
-                {
-                    audioChannel[5].clip = clip;
-                    audioChannel[5].loop = false;
-                    audioChannel[5].Play();
-                }
-            }
-        }
-
-        public void StopSFXCh5()
-        {
-            if (audioChannel[5].clip != null)
-            {
-                audioChannel[5].Stop();
-                audioChannel[5].clip = null;
-            }
-        }
-
         internal void NoAuraFarming()
         {
             if (transform.GetChild(0).gameObject.activeSelf)
                 transform.GetChild(0).gameObject.SetActive(false);
-
-            StopSFXLooping();
-            StopSFXCh5();
+            if (transform.GetChild(1).gameObject.activeSelf)
+                transform.GetChild(1).gameObject.SetActive(false);
         }
     }
 }

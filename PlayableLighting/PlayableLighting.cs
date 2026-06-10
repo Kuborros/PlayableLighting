@@ -133,7 +133,7 @@ namespace PlayableLightning
                 logSource.LogError("Something went veeryyy wrong when registering the character! Oh no!");
             }
 
-            if (ChallengeHandler.RegisterDojoBoss("kubo.lightningboss","Lightning",100,-1,"???",currentLightningID, dataBundle.LoadAssetWithSubAssets<Sprite>("Lightning_Profile")[1]))
+            if (ChallengeHandler.RegisterDojoBoss("kubo.lightningboss","Lightning",100,-1,"???",currentLightningID, dataBundle.LoadAsset<Sprite>("Lightning_Boss_Pic")))
             {
                 bossLightningID = ChallengeHandler.GetChallengeDataByUID("kubo.lightningboss").id;
             }
@@ -164,7 +164,6 @@ namespace PlayableLightning
             bossLightning.name = "Boss Lightning";
             bossLightning.layer = 8; //FG PLANE A
             bossLightning.transform.position = new Vector3(514, -336, -2);
-
 
             bossLightning.AddComponent<PlayerBossLightning>();
             PlayerBossLightning component = bossLightning.GetComponent<PlayerBossLightning>();
@@ -223,9 +222,17 @@ namespace PlayableLightning
             bossLightning.AddComponent<SpriteRenderer>();
             bossLightning.GetComponent<SpriteRenderer>().sprite = dataBundle.LoadAssetWithSubAssets<Sprite>("Lightning_Idle")[0];
             bossLightning.GetComponent<SpriteRenderer>().material = dataSource.GetComponent<SpriteRenderer>().material;
+            bossLightning.GetComponent<SpriteRenderer>().sortingOrder = 3;
 
             bossLightning.AddComponent<Animator>();
             bossLightning.GetComponent<Animator>().runtimeAnimatorController = dataBundle.LoadAsset<RuntimeAnimatorController>("Lightning Animator Player");
+
+            bossLightning.AddComponent<FPBossHud>();
+            bossLightning.GetComponent<FPBossHud>().maxPetals = 6;
+            bossLightning.GetComponent<FPBossHud>().barWidth = 200;
+            bossLightning.GetComponent<FPBossHud>().barSprite = dataSource.GetComponent<FPBossHud>().barSprite;
+            bossLightning.GetComponent<FPBossHud>().pfHudBase = dataSource.GetComponent<FPBossHud>().pfHudBase;
+            bossLightning.GetComponent<FPBossHud>().pfHudLifePetal = dataSource.GetComponent<FPBossHud>().pfHudLifePetal;
 
             GameObject dashAura = new GameObject();
             dashAura.name = "DashAura";
