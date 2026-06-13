@@ -17,7 +17,6 @@ namespace PlayableLightning.Objects
 
         private GameObject chargeFX;
         private float shotDelay = 0;
-        private float ghostTimer = 0;
         private float spinDelay = 10f;
         private bool stuffInitDone = false;
 
@@ -25,7 +24,7 @@ namespace PlayableLightning.Objects
         private RuntimeAnimatorController fullChargeProjectile;
 
 
-        private AudioClip sfxFire, sfxBigFire, sfxChargeIntro, sfxChargeLoop;
+        private AudioClip sfxFire, sfxBigFire, sfxChargeIntro;
 
         //Generic boss stuff
         public override void ResetStaticVars()
@@ -279,6 +278,12 @@ namespace PlayableLightning.Objects
                 }
                 shotDelay += FPStage.deltaTime;
                 spinDelay -= FPStage.deltaTime;
+
+                if (state == new FPObjectState(State_KO) || state == new FPObjectState(State_Hurt))
+                {
+                    NoAuraFarming();
+                }
+
             }
         }
 
@@ -296,6 +301,7 @@ namespace PlayableLightning.Objects
                 SpriteRenderer component = GetComponent<SpriteRenderer>();
                 if (component != null)
                 {
+                    component.material = FPResources.material[FPResources.MATERIAL_OUTLINE];
                     component.color = new Color(0f, 1f, 1f);
                 }
                 SpriteOutline component2 = GetComponent<SpriteOutline>();
@@ -319,13 +325,12 @@ namespace PlayableLightning.Objects
 
             //Load projectile animations
             baseProjectile = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("BaseProjectile");
-            fullChargeProjectile = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("FullChargeProjectile");
+            fullChargeProjectile = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("UberChargeProjectile");
 
             //Audio
             sfxFire = PlayableLightning.dataBundle.LoadAsset<AudioClip>("LV1 Shot");
             sfxBigFire = PlayableLightning.dataBundle.LoadAsset<AudioClip>("LV3 Shot");
             sfxChargeIntro = PlayableLightning.dataBundle.LoadAsset<AudioClip>("Charge_Intro");
-            sfxChargeLoop = PlayableLightning.dataBundle.LoadAsset<AudioClip>("Charge_Loop");
 
             //Spooky
             GameObject ghost = PlayableLightning.dataBundle.LoadAsset<GameObject>("DashGhost");
@@ -718,7 +723,6 @@ namespace PlayableLightning.Objects
             genericTimer += FPStage.deltaTime;
             SetPlayerAnimation("WingSmash_Loop");
             superArmor = true;
-            ghostTimer += FPStage.deltaTime;
             attackStats = new FPObjectState(AttackStats_Blink);
 
             if (Mathf.Repeat(genericTimer, 4f) < 1f)

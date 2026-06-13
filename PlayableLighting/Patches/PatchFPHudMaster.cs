@@ -19,7 +19,7 @@ namespace PlayableLightning.Patches
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(FPHudMaster), "Start", MethodType.Normal)]
-        static void PatchFPHudMasterStartPost(FPPlayer ___targetPlayer, ref FPHudDigit[] ___hudLifePetals, ref FPHudDigit[] ___hudShields, ref FPHudDigit[] ___hudEnergy)
+        static void PatchFPHudMasterStartPost(FPPlayer ___targetPlayer, ref FPHudDigit[] ___hudLifePetals, ref FPHudDigit[] ___hudShields, ref FPHudDigit[] ___hudEnergy, ref FPHudDigit[] ___hudBike)
         {
             if (___targetPlayer.characterID == PlayableLightning.currentLightningID)
             {
@@ -52,8 +52,19 @@ namespace PlayableLightning.Patches
                         pos.x -= i;
                         ___hudShields[i].transform.position = pos;
                     }
-
                 }
+                ___hudBike[0].digitFrames = ___hudBike[0].digitFrames.AddToArray(PlayableLightning.dataBundle.LoadAssetWithSubAssets<Sprite>("Lightning_HudPowerupIcon")[0]);
+            }
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(FPHudMaster), "LateUpdate", MethodType.Normal)]
+        static void PatchHudLateUpdate(FPHudMaster __instance, FPPlayer ___targetPlayer)
+        {
+            if (___targetPlayer.characterID == PlayableLightning.currentLightningID && ___targetPlayer.hasSpecialItem)
+            {
+                __instance.hudBike[0].GetRenderer().enabled = true;
+                __instance.hudBike[0].SetDigitValue(3);
             }
         }
 

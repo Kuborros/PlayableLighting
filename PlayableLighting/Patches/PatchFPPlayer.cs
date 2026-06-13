@@ -29,7 +29,6 @@ namespace PlayableLightning.Patches
         private static float weaponCharge = 0f;
         private static float shotDelay = 10f;
         private static float chargeShotDelay = 50f;
-        private static float uberCharge = 0f;
         private static int weaponChargeLevel = 0;
 
         private static GameObject chargeFX;
@@ -132,7 +131,7 @@ namespace PlayableLightning.Patches
 
         }
 
-        internal static void Action_Lightning_ChargedShotFire()
+        internal static void Action_Lightning_ChargedShotFire(int chargeLevel)
         {
             ProjectileBasic chargeShot;
             if (player.direction == FPDirection.FACING_LEFT)
@@ -148,7 +147,7 @@ namespace PlayableLightning.Patches
                 chargeShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * 10f;
             }
 
-            if (weaponCharge > 90f)
+            if (chargeLevel >= 3)
             {
                 chargeShot.animatorController = fullChargeProjectile;
                 chargeShot.ignoreTerrain = true;
@@ -198,6 +197,7 @@ namespace PlayableLightning.Patches
                 chargeShot.velocity.y = Mathf.Sin(0.017453292f * player.angle) * 13f;
             }
 
+            chargeShot.animatorController = uberChargeProjectile;
             chargeShot.animator = chargeShot.GetComponent<Animator>();
             chargeShot.animator.runtimeAnimatorController = chargeShot.animatorController;
             chargeShot.attackPower = 40 * player.GetAttackModifier();
@@ -215,7 +215,6 @@ namespace PlayableLightning.Patches
             chargeShot.faction = player.faction;
             chargeShot.timeBeforeCollisions = 0f;
 
-            chargeShot.animatorController = uberChargeProjectile;
             chargeShot.ignoreTerrain = true;
             chargeShot.halfHeight = 25;
             chargeShot.halfWidth = 25;
@@ -418,15 +417,6 @@ namespace PlayableLightning.Patches
                 gravAngleY = -10f;
             else if (player.input.up)
                 gravAngleY = 10f;
-
-            /*
-            if (player.input.left && player.input.up)
-                player.angle = 210f;
-            else if (player.input.right && player.input.up)
-                player.angle = 150f;
-            else if (player.input.up)
-                player.angle = 180f;
-            */
 
             if (player.genericTimer <= 30f)
             {
@@ -697,7 +687,7 @@ namespace PlayableLightning.Patches
                     }
                 }
                 //Ubercharge
-                if (player.hasSpecialItem && weaponCharge > 90 && !uberShot)
+                if (player.hasSpecialItem && weaponCharge >= 90 && !uberShot)
                 {
                     Action_Lightning_UberShotFire();
                     uberShot = true;
@@ -710,9 +700,9 @@ namespace PlayableLightning.Patches
                 chargeFX.gameObject.SetActive(false);
                 player.energyRecoverRate = energyRecoveryBaseSpeed;
                 uberShot = false;
-                if (weaponCharge > 0f)
+                if (weaponCharge > 20f)
                 {
-                    Action_Lightning_ChargedShotFire();
+                    Action_Lightning_ChargedShotFire(weaponChargeLevel);
                 }
                 if (player.onGround)
                 {
@@ -918,7 +908,6 @@ namespace PlayableLightning.Patches
 
             weaponChargeLevel = 0;
             weaponCharge = 0f;
-            uberCharge = 0f;
             dashFlag = false;
             uberShot = false;
         }

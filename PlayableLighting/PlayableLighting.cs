@@ -52,10 +52,12 @@ namespace PlayableLightning
             VinylHandler.RegisterVinyl("kubo.m_theme_lightning", "Lightning's Theme", lightningTheme, VAddToShop.Fawnstar);
 
             //Add Badges
-            BadgeHandler.RegisterBadge("kubo.lightningrunner", "Winged Runner", "Beat any stage's par time as Lightning.", null, FPBadgeType.SILVER);
-            BadgeHandler.RegisterBadge("kubo.lightningspeedrunner", "Winged Speedrunner", "Beat any stage as Lightning in less than half of the par time.", null, FPBadgeType.SILVER);
-            BadgeHandler.RegisterBadge("kubo.lightningmaster", "Winged Master", "Beat the par times in all stages as Lightning.", null, FPBadgeType.GOLD);
-            BadgeHandler.RegisterBadge("kubo.lightningcomplete", "Future Preserved", "Finish the game as Lightning.", null, FPBadgeType.GOLD);
+            Sprite[] badgeSprites = dataBundle.LoadAssetWithSubAssets<Sprite>("Lightning_Badges");
+
+            BadgeHandler.RegisterBadge("kubo.lightningrunner", "Winged Runner", "Beat any stage's par time as Lightning.", badgeSprites[5], FPBadgeType.SILVER);
+            BadgeHandler.RegisterBadge("kubo.lightningspeedrunner", "Winged Speedrunner", "Beat any stage as Lightning in less than half of the par time.", badgeSprites[6], FPBadgeType.SILVER);
+            BadgeHandler.RegisterBadge("kubo.lightningmaster", "Winged Master", "Beat the par times in all stages as Lightning.", badgeSprites[1], FPBadgeType.GOLD);
+            BadgeHandler.RegisterBadge("kubo.lightningcomplete", "Future Preserved", "Finish the game as Lightning.", badgeSprites[0], FPBadgeType.GOLD);
 
             //Add Items
             Sprite stepBooster = dataBundle.LoadAsset<Sprite>("StepBooster");
@@ -150,6 +152,7 @@ namespace PlayableLightning
             harmony.PatchAll(typeof(PatchFPEventSequence));
             harmony.PatchAll(typeof(PatchMenuCredits));
             harmony.PatchAll(typeof(PatchArenaSpawner));
+            harmony.PatchAll(typeof(PatchFuelIcons));
         }
 
         private void AssembleLightningBoss(GameObject playerLightning)
