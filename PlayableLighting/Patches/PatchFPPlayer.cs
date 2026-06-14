@@ -36,7 +36,7 @@ namespace PlayableLightning.Patches
         private static readonly float energyRecoveryBaseSpeed = 0.4f;
         private static readonly float baseProjectileDamage = 3f;
         private static readonly float baseChargeProjectileDamage = 3f;
-        private static readonly float maxChargeProjectileDamage = 20f;
+        private static readonly float maxChargeProjectileDamage = 6f;
 
         private static readonly float lightningDashVel = 24f;
 
@@ -200,7 +200,7 @@ namespace PlayableLightning.Patches
             chargeShot.animatorController = uberChargeProjectile;
             chargeShot.animator = chargeShot.GetComponent<Animator>();
             chargeShot.animator.runtimeAnimatorController = chargeShot.animatorController;
-            chargeShot.attackPower = 40 * player.GetAttackModifier();
+            chargeShot.attackPower = 10 * player.GetAttackModifier();
             chargeShot.direction = player.direction;
             chargeShot.angle = player.angle;
             chargeShot.damageElementType = 3;
@@ -221,7 +221,6 @@ namespace PlayableLightning.Patches
             chargeShot.explodeType = FPExplodeType.BIGEXPLOSION;
 
             FPAudio.PlaySfx(player.sfxCarolAttack3);
-            weaponCharge = 0f;
         }
 
         internal static void Action_Lightning_FuelPickup()
@@ -796,8 +795,8 @@ namespace PlayableLightning.Patches
         private static void AttackStats_Idle()
         {
             player.attackPower = 2f;
-            player.attackHitstun = 4f;
-            player.attackEnemyInvTime = 5f / player.animator.speed;
+            player.attackHitstun = 3f;
+            player.attackEnemyInvTime = 3f;
             player.attackKnockback.x = 0f;
             player.attackKnockback.y = 0f;
             player.attackSfx = 5;

@@ -35,9 +35,9 @@ namespace PlayableLightning
             //Load AssetBundles
             string assetPath = Path.Combine(Path.GetFullPath("."), "mod_overrides\\LightningMod");
             dataBundle = AssetBundle.LoadFromFile(Path.Combine(assetPath, "playablelightning.assets"));
-            //tutorialScene = AssetBundle.LoadFromFile(Path.Combine(assetPath, "tutoriallightning.scene"));
+            tutorialScene = AssetBundle.LoadFromFile(Path.Combine(assetPath, "playablelightning.scene"));
 
-            if (dataBundle == null) //|| tutorialScene == null)
+            if (dataBundle == null|| tutorialScene == null)
             {
                 logSource.LogError("Failed to load AssetBundles! This mod cannot work without them, exiting. Please reinstall it.");
                 return;
@@ -80,7 +80,7 @@ namespace PlayableLightning
             {
                 Name = "Lightning",
                 uid = "com.kuborro.lightning",
-                TutorialScene = "Tutorial1",
+                TutorialScene = "Tutorial1Lightning",
                 characterType = "RANGED Type",
                 skill1 = "Fly",
                 skill2 = "Double Jump",

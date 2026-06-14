@@ -813,7 +813,7 @@ namespace PlayableLightning.Objects
             basicShot.animatorController = baseProjectile;
             basicShot.animator = basicShot.GetComponent<Animator>();
             basicShot.animator.runtimeAnimatorController = basicShot.animatorController;
-            basicShot.attackPower = 5f;
+            basicShot.attackPower = 3f;
             basicShot.direction = direction;
             basicShot.angle = angle;
             basicShot.scale = new Vector3(1, 1, 1);
