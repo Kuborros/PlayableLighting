@@ -36,7 +36,7 @@ namespace PlayableLightning.Patches
         private static readonly float energyRecoveryBaseSpeed = 0.4f;
         private static readonly float baseProjectileDamage = 3f;
         private static readonly float baseChargeProjectileDamage = 3f;
-        private static readonly float maxChargeProjectileDamage = 6f;
+        private static readonly float maxChargeProjectileDamage = 5f;
 
         private static readonly float lightningDashVel = 24f;
 
@@ -200,7 +200,7 @@ namespace PlayableLightning.Patches
             chargeShot.animatorController = uberChargeProjectile;
             chargeShot.animator = chargeShot.GetComponent<Animator>();
             chargeShot.animator.runtimeAnimatorController = chargeShot.animatorController;
-            chargeShot.attackPower = 10 * player.GetAttackModifier();
+            chargeShot.attackPower = 8 * player.GetAttackModifier();
             chargeShot.direction = player.direction;
             chargeShot.angle = player.angle;
             chargeShot.damageElementType = 3;

@@ -5,7 +5,7 @@ namespace PlayableLightning.Patches
 {
     internal class PatchFPEventSequence
     {
-        //Lightning Anywhere System™️ v2
+        //Lightning Anywhere System™️ v2.1
         [HarmonyPostfix]
         [HarmonyPatch(typeof(FPEventSequence), "Start", MethodType.Normal)]
         static void PatchStateDefault(FPEventSequence __instance)
@@ -20,7 +20,6 @@ namespace PlayableLightning.Patches
                         if (cutsceneNeera.gameObject.GetComponent<Animator>().runtimeAnimatorController.name != "Lightning Animator Player")
                         {
                             cutsceneNeera.gameObject.GetComponent<Animator>().runtimeAnimatorController = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("Lightning Animator Player");
-                            //cutsceneNeera.Find("tail").gameObject.SetActive(false);
                         }
                     }
                 }
@@ -37,7 +36,6 @@ namespace PlayableLightning.Patches
                             if (cutsceneNeera.gameObject.GetComponent<Animator>().runtimeAnimatorController.name != "Lightning Animator Player")
                             {
                                 cutsceneNeera.gameObject.GetComponent<Animator>().runtimeAnimatorController = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("Lightning Animator Player");
-                                //cutsceneNeera.Find("tail").gameObject.SetActive(false);
                             }
                         }
                     }
@@ -52,7 +50,19 @@ namespace PlayableLightning.Patches
                         if (cutsceneNeeraClassic.gameObject.GetComponent<Animator>().runtimeAnimatorController.name != "Lightning Animator Player")
                         {
                             cutsceneNeeraClassic.gameObject.GetComponent<Animator>().runtimeAnimatorController = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("Lightning Animator Player");
-                            //cutsceneNeeraClassic.Find("tail").gameObject.SetActive(false);
+                        }
+                    }
+                }
+
+                //Kalaw cutscene
+                if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "Battlesphere_Kalaw")
+                {
+                    GameObject cutsceneNeeraClassic = GameObject.Find("Cutscene_Neera");
+                    if (cutsceneNeeraClassic != null)
+                    {
+                        if (cutsceneNeeraClassic.GetComponent<Animator>().runtimeAnimatorController.name != "Lightning Animator Player")
+                        {
+                            cutsceneNeeraClassic.GetComponent<Animator>().runtimeAnimatorController = PlayableLightning.dataBundle.LoadAsset<RuntimeAnimatorController>("Lightning Animator Player");
                         }
                     }
                 }
