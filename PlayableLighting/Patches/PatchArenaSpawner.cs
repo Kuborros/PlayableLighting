@@ -15,6 +15,7 @@ namespace PlayableLightning.Patches
         static void PatchArenaSpawnerStart(ArenaSpawner __instance)
         {
             lightningBoss = null;
+            if (FPSaveManager.currentArenaChallenge != PlayableLightning.bossLightningID) return;
 
             if (FPStage.stageNameString == "Training" && lightningBoss == null)
             {
@@ -51,7 +52,6 @@ namespace PlayableLightning.Patches
 
                     __instance.challenges = __instance.challenges.AddToArray(spawnList);
                     __instance.currentChallenge = PlayableLightning.bossLightningID;
-                    FPSaveManager.currentArenaChallenge = PlayableLightning.bossLightningID;
                 }
             }
         }

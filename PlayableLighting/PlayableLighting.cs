@@ -13,7 +13,7 @@ using UnityEngine;
 
 namespace PlayableLightning
 {
-    [BepInPlugin("com.kuborro.plugins.fp2.playablelightning", "Lightning", "0.3.0.0")]
+    [BepInPlugin("com.kuborro.plugins.fp2.playablelightning", "Lightning", "1.0.0.0")]
     [BepInDependency("000.kuborro.libraries.fp2.fp2lib")]
     public class PlayableLightning : BaseUnityPlugin
     {
