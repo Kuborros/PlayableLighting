@@ -359,7 +359,7 @@ namespace PlayableLightning.Patches
             }
             else if (player.input.attackPress && shotDelay < 0f && player.state != new FPObjectState(State_Lightning_AttackHold))
             {
-                if (player.velocity.x < 2 && player.velocity.x > -2)
+                if (player.velocity.x < 2 && player.velocity.x > -2 && player.velocity.y < 2 && player.velocity.y > -2)
                 {
                     if (player.state == new FPObjectState(player.State_Crouching))
                         player.SetPlayerAnimation("Crouching_Loop");
@@ -377,7 +377,7 @@ namespace PlayableLightning.Patches
             }
             else if (player.input.attackHold && chargeShotDelay < 0f && shotDelay < 0f && player.energy > 20f && player.state != new FPObjectState(State_Lightning_AttackHold))
             {
-                if (player.velocity.x < 2 && player.velocity.x > -2)
+                if (player.velocity.x < 2 && player.velocity.x > -2 && player.velocity.y < 2 && player.velocity.y > -2)
                 {
                     if (player.state == new FPObjectState(player.State_Crouching))
                         player.SetPlayerAnimation("Crouching_Loop");
@@ -647,7 +647,7 @@ namespace PlayableLightning.Patches
                     else
                     {
                         ApplyGroundForces(player, false);
-                        if (player.velocity.x < 2 && player.velocity.x > -2)
+                        if (player.velocity.x < 2 && player.velocity.x > -2 && player.velocity.y < 2 && player.velocity.y > -2)
                         {
                             if (player.input.down)
                                 player.SetPlayerAnimation("Crouching_Loop");
